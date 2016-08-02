@@ -22,9 +22,10 @@ OBJECTS = $(C_SRC:%.c=$(OBJDIR)/%.o)
 # Compiler flags
 INC = -I.
 
-LIBRARIES = -lSDL2 -lSDL2_ttf -lGL -lGLU -lm -lportaudio -lportmidi -lfftw3 -lsamplerate
+LIBRARIES = -lSDL2_ttf -lm -lportaudio -lportmidi -lsamplerate $(shell pkg-config --libs gl glu sdl2 fftw3)
 
-CFLAGS = -std=c99 -ggdb3 -O3 $(INC)
+CFLAGS = -std=gnu11 -ggdb3 -g -Ofast -O3 -march=native $(INC)
+
 CFLAGS += -Wall -Wextra -Werror -Wno-unused-parameter
 CFLAGS += -D_POSIX_C_SOURCE=20160524
 LFLAGS = $(CFLAGS)
