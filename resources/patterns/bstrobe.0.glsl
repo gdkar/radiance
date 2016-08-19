@@ -1,7 +1,7 @@
 // Full black strobe. Intensity increases frequency
 
 void main(void) {
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = texture(iFrame, v_uv);
     vec4 c;
 
     if(iIntensity >= 0.05){

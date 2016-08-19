@@ -54,5 +54,5 @@ float noise(float p);
 float noise(vec2 p);
 float noise(vec3 p);
 
-const float RADIUS=25.;
+#define RADIUS (25.)
 #line 0
