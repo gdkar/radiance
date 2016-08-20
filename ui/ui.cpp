@@ -52,6 +52,103 @@ static int selected = 0;
 // Strip indicators
 static enum {STRIPS_NONE, STRIPS_SOLID, STRIPS_COLORED} strip_indicator = STRIPS_NONE;
 
+struct render_class {
+    struct reservation {
+        reservation(render_class *cls)
+        : clsp(cls)
+        {}
+        void update(float x, float y, float w, float h)
+        {
+            if(data.size() < 4 ||
+              x!=data[0] || y != data[1] || w != data[2] || h != data[3]) {
+                off = -1;
+                data=std::vector<GLfloat>{x,y,w,h};
+                dirty = true;
+                clsp->vbo_dirty = true;
+            }
+        }
+        void draw()
+        {
+            if(off < 0)
+                return;
+            clsp->draw(off);
+        }
+        render_class *clsp;
+        off_t off{};
+        std::vector<GLfloat> data{};
+        bool dirty{false};
+    };
+    std::list<reservation> reservations{};
+    render_class()
+    {}
+    bool create()
+    {
+        CHECK_GL();
+        if(!vao){
+            glGenVertexArrays(1,&vao);
+            CHECK_GL();
+        }
+        if(!vbo) {
+            glGenBuffers(1,&vbo);
+            CHECK_GL();
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBindVertexArray(vao);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
+        glEnableVertexAttribArray(1);
+        CHECK_GL();
+        return true;
+    }
+    reservation *reserve(float x, float y, float w, float h)
+    {
+        reservations.emplace_back(this);
+        auto &res = reservations.back();
+        res.update(x,y,w,h);
+        return &res;
+    }
+    void prepare()
+    {
+        if(vbo_dirty) {
+            vbo_dirty = false;
+            for(auto & res : reservations) {
+                if(res.dirty){
+                    res.off = data.size() / 4;
+                    std::copy(res.data.begin(),res.data.end(),std::back_inserter(data));
+                    res.dirty = false;
+                    vbo_dirty = true;
+                }
+            }
+            if(vbo_dirty){
+                glBindBuffer(GL_ARRAY_BUFFER,vbo);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * data.size(), data.data(), GL_DYNAMIC_DRAW);
+                vbo_dirty = false;
+                vbo_size = sizeof(GLfloat)*data.size();
+            }
+        }
+    }
+    void bind()
+    {
+        glBindVertexArray(vao);
+    }
+    void draw(off_t off)
+    {
+        prepare();
+        glDrawArrays(GL_POINTS, off, 1);
+    }
+   ~render_class()
+    {
+        glDeleteVertexArrays(1,&vao);
+        glDeleteBuffers(1,&vbo);
+    }
+    GLuint vao{};
+    GLuint vbo{};
+    std::vector<GLfloat> data{};
+    size_t vbo_size{};
+    bool   vbo_dirty{true};
+};
+
 // False colors
 #define HIT_NOTHING 0
 #define HIT_PATTERN 1
@@ -87,6 +184,13 @@ static const int map_stab[19] =  {15, 1,  1,  2,  3,  6,  7,  8,  8,  9,  9,  10
 static const int map_home[19] =  {1,  1,  1,  1,  1,  1,  1,  1,  1,  9,  9,  9,  9,  9,  9,  9,  9,  1,  9};
 static const int map_end[19] =   {8,  8,  8,  8,  8,  8,  8,  8,  8, 16, 16, 16, 16, 16, 16, 16, 16,  8, 16};
 
+render_class rclass{};
+std::vector<render_class::reservation*> pattern_res{};
+render_class::reservation* crossfader_res{};
+render_class::reservation* spectrum_res{};
+render_class::reservation* waveform_res{};
+render_class::reservation* main_res{};
+render_class::reservation* strips_res{};
 // Font
 embedded_renderer gl_font{};
 embedded_renderer textbox_font{};
@@ -106,7 +210,7 @@ static int right_deck_selector = 1;
 // Forward declarations
 static void handle_text(const char * text);
 //
-static void bind_vao_fill_vbo(float x, float y, float w, float h)
+/*static void bind_vao_fill_vbo(float x, float y, float w, float h)
 {
     GLfloat vertices[] = { x, y, w, h };
 
@@ -116,11 +220,11 @@ static void bind_vao_fill_vbo(float x, float y, float w, float h)
     glUnmapBuffer(GL_ARRAY_BUFFER);
 //    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
     glBindVertexArray(vao);
-}
-static void fill(float w, float h) {
+}*/
+/*static void fill(float w, float h) {
     bind_vao_fill_vbo(0., 0., w, h);
     glDrawArrays(GL_POINTS, 0, 1);
-}
+}*/
 
 static void debug_callback(GLenum source, GLenum type, GLuint id,
     GLenum severity, GLsizei length, const char *message, const void *opaque)
@@ -173,6 +277,18 @@ void ui_init() {
         glEnable(GL_DEBUG_OUTPUT);
         CHECK_GL();
     }
+    rclass.create();
+
+    for(auto i = 0; i < 16; ++i) {
+        pattern_res.push_back(rclass.reserve(map_x[i],map_y[i],config.ui.pattern_width,config.ui.pattern_height));
+    }
+    crossfader_res = rclass.reserve(config.ui.crossfader_x,config.ui.crossfader_y,config.ui.crossfader_width,config.ui.crossfader_height);
+    spectrum_res = rclass.reserve(config.ui.spectrum_x,config.ui.spectrum_y,config.ui.spectrum_width,config.ui.spectrum_height);
+    waveform_res = rclass.reserve(config.ui.waveform_x,config.ui.waveform_y,config.ui.waveform_width,config.ui.waveform_height);
+    strips_res = rclass.reserve(0,0,config.pattern.master_width,config.pattern.master_height);
+    main_res = rclass.reserve(0,0,config.ui.window_width,config.ui.window_height);
+    rclass.prepare();
+
     glGenBuffers(1,&vbo);
     glGenBuffers(1,&pat_vbo);
     GLfloat pat_vbo_data[16 * 5];
@@ -547,10 +663,10 @@ static void handle_key(SDL_KeyboardEvent * e) {
     }
 }
 
-static void blit(float x, float y, float w, float h) {
+/*static void blit(float x, float y, float w, float h) {
     bind_vao_fill_vbo(x, y, w, h);
     glDrawArrays(GL_POINTS, 0, 1);
-}
+}*/
 
 static void ui_render(bool select) {
     GLint location;
@@ -572,7 +688,7 @@ static void ui_render(bool select) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, crossfader.tex_output);
 
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
             if(!strip_vbo || !strip_vbo) {
                 glGenBuffers(1,&strip_vbo);
                 glBindBuffer(GL_ARRAY_BUFFER, strip_vbo);
@@ -626,10 +742,10 @@ static void ui_render(bool select) {
     // Render the crossfader
 
 
-    auto sw = 0;
+/*    auto sw = 0;
     auto sh = 0;
     auto vw = 0;
-    auto vh = 0;
+    auto vh = 0;*/
 
     glEnable(GL_BLEND);
 
@@ -643,7 +759,7 @@ static void ui_render(bool select) {
     glViewport(0, 0, ww, wh);
 
     CHECK_GL();
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(main_shader);
     glProgramUniform2f(main_shader, 0, ww, wh);
@@ -654,14 +770,15 @@ static void ui_render(bool select) {
     location = glGetUniformLocation(main_shader, "iSelector");
     glUniform3i(location, left_deck_selector,right_deck_selector,selected);
     CHECK_GL();
-
-    fill(ww, wh);
+    rclass.bind();
+    main_res->draw();
+//    fill(ww, wh);
     CHECK_GL();
     if(!select) {
         analyze_render(buf_spectrum_data, buf_waveform_data, buf_waveform_beats_data);
         // Render the spectrum
-        sw = config.ui.spectrum_width;
-        sh = config.ui.spectrum_height;
+//        sw = config.ui.spectrum_width;
+//        sh = config.ui.spectrum_height;
         glUseProgram(spectrum_shader);
         location = glGetUniformLocation(spectrum_shader, "iBins");
        glUniform1i(location, config.audio.spectrum_bins);
@@ -671,11 +788,12 @@ static void ui_render(bool select) {
 //        glBindTexture(GL_TEXTURE_1D, tex_spectrum_data);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_spectrum_data);
         glProgramUniform2f(spectrum_shader, 0, ww, wh);
-        blit(config.ui.spectrum_x, config.ui.spectrum_y, sw, sh);
+        spectrum_res->draw();
+//        blit(config.ui.spectrum_x, config.ui.spectrum_y, sw, sh);
         // Render the waveform
 
-        vw = config.ui.waveform_width;
-        vh = config.ui.waveform_height;
+//        vw = config.ui.waveform_width;
+//        vh = config.ui.waveform_height;
         glUseProgram(waveform_shader);
         glProgramUniform2f(waveform_shader, 0, ww, wh);
         location = glGetUniformLocation(waveform_shader, "iLength");
@@ -690,11 +808,11 @@ static void ui_render(bool select) {
 //        glBindTexture(GL_TEXTURE_1D, tex_waveform_data);
 //        glActiveTexture(GL_TEXTURE1);
 //        glBindTexture(GL_TEXTURE_1D, tex_waveform_beats_data);
-
-        blit(config.ui.waveform_x, config.ui.waveform_y, vw, vh);
+        waveform_res->draw();
+//        blit(config.ui.waveform_x, config.ui.waveform_y, vw, vh);
     }
-    auto cw = config.ui.crossfader_width;
-    auto ch = config.ui.crossfader_height;
+//    auto cw = config.ui.crossfader_width;
+//    auto ch = config.ui.crossfader_height;
     glUseProgram(crossfader_shader);
     location = glGetUniformLocation(crossfader_shader, "iSelection");
     glUniform1i(location, select);
@@ -717,12 +835,13 @@ static void ui_render(bool select) {
 
     glProgramUniform2f(crossfader_shader, 0, ww, wh);
     glProgramUniform2f(crossfader_shader, 12, 1.2,1.2);
-    blit(config.ui.crossfader_x, config.ui.crossfader_y, cw, ch);
+    crossfader_res->draw();
+//    blit(config.ui.crossfader_x, config.ui.crossfader_y, cw, ch);
 
-    int pw = config.ui.pattern_width;
-    int ph = config.ui.pattern_height;
+//    int pw = config.ui.pattern_width;
+//    int ph = config.ui.pattern_height;
     glUseProgram(pat_shader);
-    location = glGetUniformLocation(main_shader, "iSelector");
+    location = glGetUniformLocation(pat_shader, "iSelector");
     glUniform3i(location, left_deck_selector,right_deck_selector,selected);
     location = glGetUniformLocation(pat_shader, "iSelection");
     glUniform1i(location, select);
@@ -746,7 +865,8 @@ static void ui_render(bool select) {
             glVertexAttribI1i(2, i);
             glUniform1f(pattern_intensity, p ? p->intensity : 0);
             glUniform1i(location, select);
-            blit(map_x[i],map_y[i],pw, ph);
+            pattern_res[i]->draw();
+//            blit(map_x[i],map_y[i],pw, ph);
         }
     }
 
