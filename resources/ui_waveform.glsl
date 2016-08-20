@@ -1,3 +1,11 @@
+
+layout(std430, binding=1) readonly buffer Wave {
+    vec4 wav_data[];
+};
+
+layout(std430, binding=2) readonly buffer Beats {
+    float beat_data[];
+};
 void main(void) {
     float g = v_uv.y * 0.5 + 0.1;
     float w = 4.;
@@ -11,8 +19,10 @@ void main(void) {
     float shrink_mag = 90. / 100.;
     float freq = (v_uv.x - 0.5) / shrink_freq + 0.5;
     float mag = abs(v_uv.y - 0.5) * 2* shrink_mag;
-    vec4 wav = texture(iWaveform, freq);
-    vec4 beats = texture(iBeats, freq);
+    vec4 wav = wav_data[uint(freq * wav_data.length())];
+//    vec4 wav = texture(iWaveform, freq);
+    float beats = beat_data[uint(freq * beat_data.length())];
+//    vec4 beats = texture(iBeats, freq);
     vec3 wf = (wav.rgb - mag) * 90.;
     wf = smoothstep(0., 1., wf) * (1. - step(1., df));
     float level = (wav.a - mag) * 90;

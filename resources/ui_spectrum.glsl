@@ -1,3 +1,7 @@
+
+layout(std430, binding=3) readonly buffer Spectrum {
+    float data[];
+} spectrum;
 void main(void) {
     float g = v_uv.y * 0.5 + 0.1;
     float w = 4.;
@@ -11,7 +15,7 @@ void main(void) {
     float shrink_mag = 90. / 100.;
     float freq = (v_uv.x - 0.5) / shrink_freq + 0.5;
     float mag = (v_uv.y - 0.5) * shrink_mag + 0.5;
-    float d = (texture(iSpectrum, freq).r - mag) * 90.;
+    float d = (spectrum.data[uint(spectrum.data.length() * freq)] - mag) * 90.;
     float a = smoothstep(0., 1., d) * (1. - step(1., df));
     float gb = 0.5 * clamp(0., 1., d / 30.);
     f_color0 = composite(f_color0, vec4(1., gb, gb, a));

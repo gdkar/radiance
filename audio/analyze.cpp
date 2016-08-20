@@ -64,7 +64,7 @@ void analyze_init() {
     spectrum_gl = std::make_unique<GLfloat[]>(config.audio.spectrum_bins);
     spectrum_n = std::make_unique<int[]>(config.audio.spectrum_bins);
     waveform_gl = std::make_unique<GLfloat[]>(config.audio.waveform_length * 8);
-    waveform_beats_gl = std::make_unique<GLfloat[]>(config.audio.waveform_length * 8);
+    waveform_beats_gl = std::make_unique<GLfloat[]>(config.audio.waveform_length * 2);
     window = std::make_unique<double[]>(config.audio.fft_length);
     for(int i=0; i<config.audio.fft_length; i++)
         window[i] = hann_window(i);
@@ -189,10 +189,10 @@ void analyze_chunk(chunk_pt chunk) {
     waveform_gl[waveform_ptr * 4 + 1] = audio_thread_mid;
     waveform_gl[waveform_ptr * 4 + 2] = audio_thread_low;
     waveform_gl[waveform_ptr * 4 + 3] = audio_thread_level;
-    waveform_beats_gl[waveform_ptr * 4] = beat_lpf;
+    waveform_beats_gl[waveform_ptr ] = beat_lpf;
 
     memcpy(&waveform_gl[(config.audio.waveform_length + waveform_ptr) * 4], &waveform_gl[waveform_ptr * 4], 4 * sizeof waveform_gl[0]);
-    memcpy(&waveform_beats_gl[(config.audio.waveform_length + waveform_ptr) * 4], &waveform_beats_gl[waveform_ptr * 4], 4 * sizeof waveform_beats_gl[0]);
+    memcpy(&waveform_beats_gl[(config.audio.waveform_length + waveform_ptr)], &waveform_beats_gl[waveform_ptr], sizeof waveform_beats_gl[0]);
 
     waveform_ptr = (waveform_ptr + 1) % config.audio.waveform_length;
 
@@ -200,14 +200,20 @@ void analyze_chunk(chunk_pt chunk) {
 }
 
 // This is called from the OpenGL Thread
-void analyze_render(GLuint tex_spectrum, GLuint tex_waveform, GLuint tex_waveform_beats) {
+void analyze_render(GLuint buf_spectrum, GLuint buf_waveform, GLuint buf_waveform_beats) {
     if (SDL_LockMutex(mutex) != 0) FAIL("Could not lock mutex!");
-    glBindTexture(GL_TEXTURE_1D,tex_spectrum);
-    glTexSubImage1D(GL_TEXTURE_1D, 0,0,  config.audio.spectrum_bins, GL_RED, GL_FLOAT, spectrum_gl.get());
-    glBindTexture(GL_TEXTURE_1D,tex_waveform);
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0,config.audio.waveform_length, GL_RGBA, GL_FLOAT, &waveform_gl[waveform_ptr * 4]);
-    glBindTexture(GL_TEXTURE_1D,tex_waveform_beats);
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, config.audio.waveform_length, GL_RGBA, GL_FLOAT, &waveform_beats_gl[waveform_ptr * 4]);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, config.audio.spectrum_bins * sizeof(GLfloat), spectrum_gl.get(),GL_DYNAMIC_DRAW);
+//    glBindTexture(GL_TEXTURE_1D,tex_spectrum);
+//    glTexSubImage1D(GL_TEXTURE_1D, 0,0,  config.audio.spectrum_bins, GL_RED, GL_FLOAT, spectrum_gl.get());
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_waveform);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, config.audio.waveform_length* sizeof(GLfloat) * 4, waveform_gl.get() + 4 * waveform_ptr,GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_waveform_beats);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, config.audio.waveform_length* sizeof(GLfloat) * 1, waveform_beats_gl.get() + waveform_ptr,GL_DYNAMIC_DRAW);
+//    glBindTexture(GL_TEXTURE_1D,tex_waveform);
+//    glTexSubImage1D(GL_TEXTURE_1D, 0, 0,config.audio.waveform_length, GL_RGBA, GL_FLOAT, &waveform_gl[waveform_ptr * 4]);
+//    glBindTexture(GL_TEXTURE_1D,tex_waveform_beats);
+//    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, config.audio.waveform_length, GL_RGBA, GL_FLOAT, &waveform_beats_gl[waveform_ptr * 4]);
 
     audio_hi = audio_thread_hi;
     audio_mid = audio_thread_mid;

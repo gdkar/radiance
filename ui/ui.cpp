@@ -18,10 +18,10 @@ static GLuint select_fb;
 static GLuint strip_fb;
 static GLuint select_tex;
 static GLuint pattern_array;
-static GLuint tex_spectrum_data;
+static GLuint buf_spectrum_data;
 static GLuint spectrum_shader;
-static GLuint tex_waveform_data;
-static GLuint tex_waveform_beats_data;
+static GLuint buf_waveform_data;
+static GLuint buf_waveform_beats_data;
 static GLuint waveform_shader;
 static GLuint strip_texture;
 static GLuint strip_vao      = 0;
@@ -222,13 +222,24 @@ void ui_init() {
 
     // Init pattern textures
 
-
+    glGenBuffers(1,&buf_spectrum_data);
+//    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum_data);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_spectrum_data);
+//    glNamedBufferStorage(buf_spectrum_data, config.audio.spectrum_bins * sizeof(GLfloat),NULL, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
     // Spectrum data texture
-    tex_spectrum_data = make_texture(config.audio.spectrum_bins);
+//    tex_spectrum_data = make_texture(config.audio.spectrum_bins);
+    glGenBuffers(1,&buf_waveform_data);
+//    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum_data);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_waveform_data);
+//    glNamedBufferStorage(buf_waveform_data, config.audio.waveform_length * 4 * sizeof(GLfloat),NULL, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
+    glGenBuffers(1,&buf_waveform_beats_data);
+//    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum_data);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_waveform_beats_data);
+//    glNamedBufferStorage(buf_waveform_beats_data, config.audio.waveform_length * sizeof(GLfloat), NULL,GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
 
     // Waveform data texture
-    tex_waveform_data = make_texture( config.audio.waveform_length);
-    tex_waveform_beats_data = make_texture( config.audio.waveform_length);
+///    tex_waveform_data = make_texture( config.audio.waveform_length);
+//    tex_waveform_beats_data = make_texture( config.audio.waveform_length);
     // Waveform UI element
 
     // Strip indicators
@@ -243,8 +254,8 @@ void ui_init() {
     if((main_shader = load_program({"#lib.glsl","#lib_ui.glsl"}, "#header_ui.glsl",{"#ui_main.glsl"})) == 0) FAIL("Could not load UI main shader!\n%s", get_load_program_error().c_str());
     if((pat_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_pat.glsl"})) == 0) FAIL("Could not load UI pattern shader!\n%s", get_load_program_error().c_str());
     if((crossfader_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_crossfader.glsl"})) == 0) FAIL("Could not load UI crossfader shader!\n%s", get_load_program_error().c_str());
-    if((spectrum_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_spectrum.glsl"})) == 0) FAIL("Could not load UI spectrum shader!\n%s", get_load_program_error().c_str());
     if((waveform_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_waveform.glsl"})) == 0) FAIL("Could not load UI waveform shader!\n%s", get_load_program_error().c_str());
+    if((spectrum_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_spectrum.glsl"})) == 0) FAIL("Could not load UI spectrum shader!\n%s", get_load_program_error().c_str());
     if((strip_shader = load_program({"#strip.v.glsl"},{},{"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#strip.f.glsl"})) == 0) FAIL("Could not load strip indicator shader!\n%s", get_load_program_error().c_str());
     if((blit_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#blit.glsl"})) == 0) FAIL("Could not load blit shader!\n%s", get_load_program_error().c_str());
     glProgramUniform2f(waveform_shader,12,1.2f,1.2f);
@@ -643,21 +654,20 @@ static void ui_render(bool select) {
     fill(ww, wh);
     CHECK_GL();
     if(!select) {
-        analyze_render(tex_spectrum_data, tex_waveform_data, tex_waveform_beats_data);
+        analyze_render(buf_spectrum_data, buf_waveform_data, buf_waveform_beats_data);
         // Render the spectrum
         sw = config.ui.spectrum_width;
         sh = config.ui.spectrum_height;
         glUseProgram(spectrum_shader);
         location = glGetUniformLocation(spectrum_shader, "iBins");
-        glUniform1i(location, config.audio.spectrum_bins);
-        location = glGetUniformLocation(spectrum_shader, "iSpectrum");
-        glUniform1i(location, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_1D, tex_spectrum_data);
-
+       glUniform1i(location, config.audio.spectrum_bins);
+//        location = glGetUniformLocation(spectrum_shader, "iSpectrum");
+//        glUniform1i(location, 0);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_1D, tex_spectrum_data);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_spectrum_data);
         glProgramUniform2f(spectrum_shader, 0, ww, wh);
         blit(config.ui.spectrum_x, config.ui.spectrum_y, sw, sh);
-
         // Render the waveform
 
         vw = config.ui.waveform_width;
@@ -666,14 +676,16 @@ static void ui_render(bool select) {
         glProgramUniform2f(waveform_shader, 0, ww, wh);
         location = glGetUniformLocation(waveform_shader, "iLength");
         glUniform1i(location, config.audio.waveform_length);
-        location = glGetUniformLocation(waveform_shader, "iWaveform");
-        glUniform1i(location, 0);
-        location = glGetUniformLocation(waveform_shader, "iBeats");
-        glUniform1i(location, 1);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_1D, tex_waveform_data);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_1D, tex_waveform_beats_data);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_waveform_data);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_waveform_beats_data);
+//        location = glGetUniformLocation(waveform_shader, "iWaveform");
+///        glUniform1i(location, 0);
+//        location = glGetUniformLocation(waveform_shader, "iBeats");
+//        glUniform1i(location, 1);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_1D, tex_waveform_data);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_1D, tex_waveform_beats_data);
 
         blit(config.ui.waveform_x, config.ui.waveform_y, vw, vh);
     }
