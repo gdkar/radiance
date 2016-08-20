@@ -1,5 +1,5 @@
 
-layout(std430, binding=3) readonly buffer Spectrum {
+layout(binding=3) buffer Spectrum {
     float data[];
 } spectrum;
 void main(void) {

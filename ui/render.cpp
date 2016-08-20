@@ -10,12 +10,12 @@
 void render_init(struct render * render, GLint texture)
 {
     auto texel_count = config.pattern.master_width*config.pattern.master_height;
-    render->prog = load_compute("#render.c.glsl");
+    render->pixel_count = texel_count;
     glGenBuffers(1, &render->pbo);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, render->pbo);
     glBufferStorage(
         GL_PIXEL_PACK_BUFFER
-      , texel_count * BYTES_PER_PIXEL
+      , texel_count * BYTES_PER_PIXEL * 4
       , nullptr,
         GL_MAP_READ_BIT
        |GL_MAP_PERSISTENT_BIT
@@ -25,16 +25,17 @@ void render_init(struct render * render, GLint texture)
         glMapBufferRange(
             GL_PIXEL_PACK_BUFFER
           , 0
-          , texel_count * BYTES_PER_PIXEL
+          , texel_count * BYTES_PER_PIXEL * 4
           , GL_MAP_READ_BIT
            |GL_MAP_PERSISTENT_BIT
            |GL_MAP_COHERENT_BIT
            )
         );
+    CHECK_GL();
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glGenFramebuffers(1, &render->fb);
-    glBindFramebuffer(GL_FRAMEBUFFER, render->fb);
-    glNamedFramebufferTexture(render->fb, GL_COLOR_ATTACHMENT0, texture, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, render->fb);
+    glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
     CHECK_GL();
 
     render->mutex = SDL_CreateMutex();
@@ -42,8 +43,8 @@ void render_init(struct render * render, GLint texture)
         FAIL("Could not create mutex: %s\n", SDL_GetError());
 }
 
-void render_term(struct render * render) {
-//    free(render->pixels);
+void render_term(struct render * render)
+{
     glBindBuffer(GL_PIXEL_PACK_BUFFER,render->pbo);
     glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
     glDeleteBuffers(1,&render->pbo);
@@ -55,19 +56,21 @@ void render_term(struct render * render) {
 void render_readback(struct render * render)
 {
     if(SDL_TryLockMutex(render->mutex) == 0) {
-        if(render->fence) {
-            glDeleteSync(render->fence);
-            render->fence = nullptr;
+        auto head = render->fence_head.load();
+        if(render->fence[head&3].load()) {
+            SDL_UnlockMutex(render->mutex);
+            return;
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, render->fb);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, render->fb);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, render->pbo);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         glMemoryBarrier(
             GL_PIXEL_BUFFER_BARRIER_BIT
             |GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT
         );
-        glReadPixels(0, 0, config.pattern.master_width, config.pattern.master_height, GL_RGBA, GL_FLOAT, NULL);//(GLvoid*)render->pixels);
-        render->fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        glReadPixels(0, 0, config.pattern.master_width, config.pattern.master_height, GL_RGBA, GL_FLOAT, (void*)((head &3)* render->pixel_count * BYTES_PER_PIXEL ));//(GLvoid*)render->pixels);
+        render->fence[head&3] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        render->fence_head++;
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         CHECK_GL();
         SDL_UnlockMutex(render->mutex);
@@ -90,6 +93,7 @@ void render_thaw(struct render * render)
 
 SDL_Color render_sample(struct render * render, float x, float y)
 {
+    auto pixels = render->pixels + render->pixel_count * 4 * (render->fence_tail.load() & 3);
     int col = 0.5 * (x + 1) * config.pattern.master_width;
     int row = 0.5 * (-y + 1) * config.pattern.master_height;
     if(col < 0) col = 0;
@@ -100,9 +104,9 @@ SDL_Color render_sample(struct render * render, float x, float y)
 
     // Use NEAREST interpolation for now
     SDL_Color c;
-    c.r = render->pixels[index]*255;
-    c.g = render->pixels[index + 1]*255;
-    c.b = render->pixels[index + 2]*255;
-    c.a = render->pixels[index + 3]*255;
+    c.r = pixels[index]*255;
+    c.g = pixels[index + 1]*255;
+    c.b = pixels[index + 2]*255;
+    c.a = pixels[index + 3]*255;
     return c;
 }

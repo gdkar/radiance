@@ -1,11 +1,14 @@
-#version 430
+#version 330
 
-in layout(location = 0) vec2 a_corner;
-in layout(location = 1) vec2 a_size;
-in layout(location = 2) int  a_layer;
-out flat vec2 vg_corner;
-out flat vec2 vg_size;
-out flat int  vg_layer;
+#extension GL_ARB_explicit_attrib_location: enable
+#extension GL_ARB_explicit_uniform_location: enable
+layout(location = 0) in vec2 a_corner;
+layout(location = 1)in vec2  a_size;
+layout(location = 2) in int a_layer;
+layout(location = 12) uniform vec2 u_over_size = vec2(1.1,1.1);
+flat out vec2 vg_corner;
+flat out vec2 vg_size;
+flat out int  vg_layer;
 void main()
 {
     vg_corner = a_corner;

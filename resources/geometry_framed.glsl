@@ -1,16 +1,16 @@
-#version 430
+#version 330
 
 layout(points) in;
 layout(triangle_strip, max_vertices=4) out;
-uniform layout(location = 0) vec2 u_global_size;
-uniform layout(location = 12) vec2 u_over_size = vec2(1.1,1.1);
-in flat vec2 vg_corner[];
-in flat vec2 vg_size  [];
-in flat int  vg_layer [];
-out flat int v_layer;
-out flat vec2 v_corner;
-out flat vec2 v_size;
-out vec2      v_uv;
+uniform vec2 u_global_size;
+uniform vec2 u_over_size;
+flat in vec2 vg_corner[];
+flat in vec2 vg_size  [];
+flat in int  vg_layer [];
+flat out vec2 v_corner;
+flat out vec2 v_size;
+flat out int v_layer;
+out vec2 v_uv;
 
 void main()
 {

@@ -1,4 +1,8 @@
-#version 430 core
+#version 330
+
+#extension GL_ARB_explicit_attrib_location: enable
+#extension GL_ARB_explicit_uniform_location: enable
+
 /* =========================================================================
  * Freetype GL - A C OpenGL Freetype engine
  * Platform:    Any
@@ -31,13 +35,13 @@
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of Nicolas P. Rougier.
  * ========================================================================= */
-uniform layout(location=0) vec2 u_global_size;
-in layout(location=0) vec2 a_position;
-in layout(location=1) vec2 a_uv;
-in layout(location=2) vec4 a_color;
+layout(location=0) uniform vec2 u_global_size;
+layout(location=0) in vec2 a_position;
+layout(location=1) in vec2 a_uv;
+layout(location=2) in vec4 a_color;
 
 out vec2 v_uv;
-out flat vec4 v_color;
+flat out vec4 v_color;
 void main(void)
 {
     v_uv    = a_uv;

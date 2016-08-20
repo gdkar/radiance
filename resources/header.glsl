@@ -1,15 +1,17 @@
-#version 430
+#version 330
+#extension GL_ARB_explicit_attrib_location: enable
+#extension GL_ARB_explicit_uniform_location: enable
 
-in flat vec2 v_corner;
-in flat vec2 v_size;
+flat in vec2 v_corner;
+flat in  vec2 v_size;
 in      vec2 v_uv;
-in flat int  v_layer;
-out layout(location = 0) vec4 f_color0;
+flat in int  v_layer;
+layout(location = 0) out vec4 f_color0;
 
 // Time, measured in beats. Wraps around to 0 every 16 beats, [0.0, 16.0)
-uniform layout(location = 1) float iTime;
+layout(location = 1) uniform float iTime;
 // Audio levels, high/mid/low/level, [0.0, 1.0]
-uniform layout(location = 2) vec4 iAudio;
+layout(location = 2) uniform vec4 iAudio;
 
 #define iAudioLow iAudio.x
 #define iAudioMid iAudio.y
@@ -18,22 +20,22 @@ uniform layout(location = 2) vec4 iAudio;
 
 // Intensity slider, [0.0, 1.0]
 
-uniform layout(location = 3) float iIntensity;
+layout(location = 3) uniform float iIntensity;
 
 // Intensity slider integrated with respect to wall time mod 1024, [0.0, 1024.0)
-uniform layout(location = 4) float iIntensityIntegral;
+layout(location = 4) uniform float iIntensityIntegral;
 
 // (Ideal) output rate in frames per second
-uniform layout(location = 5) float iFPS;
+layout(location = 5) uniform float iFPS;
 
 // Output of the previous pattern
-uniform layout(location = 6) sampler2D iFrame;
+layout(location = 6) uniform sampler2D iFrame;
 
 // Previous outputs of the other channels (e.g. foo.1.glsl) 
-uniform layout(location = 7) sampler2D iChannel[3];
+layout(location = 7) uniform sampler2D iChannel[3];
 
-uniform layout(location = 10) sampler2DArray iAllPatterns;
-uniform layout(location = 11) int  iPatternIndex;
+layout(location = 10) uniform sampler2DArray iAllPatterns;
+layout(location = 11) uniform int  iPatternIndex;
 #define M_PI 3.1415926535897932384626433832795
 
 //

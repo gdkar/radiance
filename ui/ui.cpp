@@ -135,7 +135,7 @@ void ui_init() {
     // Init SDL
 
     if(SDL_Init(SDL_INIT_VIDEO) < 0) FAIL("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(
         SDL_GL_CONTEXT_PROFILE_MASK
@@ -154,7 +154,6 @@ void ui_init() {
       ,(int(get_loglevel()) <= int(LOGLEVEL_DEBUG)
             ? SDL_GL_CONTEXT_DEBUG_FLAG
             : 0)
-       |SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
         );
     ww = config.ui.window_width;
     wh = config.ui.window_height;
@@ -285,7 +284,7 @@ void ui_make_context_current(SDL_GLContext ctx)
 SDL_GLContext ui_make_secondary_context()
 {
     SDL_GL_MakeCurrent(window,context);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(
         SDL_GL_CONTEXT_PROFILE_MASK
@@ -733,7 +732,7 @@ static void ui_render(bool select) {
 
     location = glGetUniformLocation(pat_shader, "iName");
     glUniform1i(location, 1);
-    GLint pattern_intensity = glGetUniformLocation(pat_shader, "iIntensity");
+    auto pattern_intensity = glGetUniformLocation(pat_shader, "iIntensity");
     glProgramUniform2f(pat_shader, 0, ww, wh);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);

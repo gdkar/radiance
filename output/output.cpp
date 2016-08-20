@@ -50,7 +50,7 @@ int output_run(void * args) {
     double stat_ops = 100;
     int render_count = 0;
 
-    output_running = true;   
+    output_running = true;
     int last_tick = SDL_GetTicks();
     unsigned int last_output_render_count = output_render_count;
     (void) last_output_render_count; //TODO

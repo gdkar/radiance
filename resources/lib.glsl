@@ -1,4 +1,4 @@
-#version 430
+#version 330
 const float RADIUS = 25.;
 // Utilities to convert from an RGB vec3 to an HSV vec3
 vec3 rgb2hsv(vec3 c) {

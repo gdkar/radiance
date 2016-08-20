@@ -1,12 +1,16 @@
-#version 430
-
+#version 330
+#extension GL_ARB_explicit_attrib_location: require
+#extension GL_ARB_explicit_uniform_location: require
+#extension GL_ARB_shader_storage_buffer_object: require
+#extension GL_ARB_uniform_buffer_object: require
+#extension GL_ARB_shading_language_420pack: require
 //in  flat vec2 v_corner;
-in  flat vec2 v_size;
+flat in vec2 v_size;
 in      vec2 v_uv;
-in  flat int v_layer;
-out layout(location = 0) vec4 f_color0;
+flat in int v_layer;
+layout(location = 0) out vec4 f_color0;
 
-uniform layout(location = 3) float iIntensity;
+layout(location = 3) uniform float iIntensity;
 
 #define M_PI 3.1415926535897932384626433832795
 

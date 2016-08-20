@@ -1,6 +1,9 @@
-#version 430
-uniform layout(location = 0) vec2 u_global_size;
-in layout(location = 0) vec2 a_position;
+#version 330
+#extension GL_ARB_explicit_attrib_location: enable
+#extension GL_ARB_explicit_uniform_location: enable
+
+layout(location = 0) uniform vec2 u_global_size;
+layout(location = 0) in vec2 a_position;
 
 out vec2 v_uv;
 

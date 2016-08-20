@@ -1,7 +1,7 @@
 #pragma once
 #include "util/common.h"
 #include "util/semaphore.hpp"
-
+#include <atomic>
 struct render {
     size_t pixel_count;
     GLuint vbo;
@@ -9,8 +9,10 @@ struct render {
     GLuint ssbo;
     GLuint prog;
     GLuint fb;
-    GLsync fence;
-    semaphore sem{};
+    std::atomic<GLsync> fence[4];
+    std::atomic<uint32_t> fence_head{0};
+    std::atomic<uint32_t> fence_tail{0};
+    semaphore sem{0,0};
     GLfloat * pixels;
     SDL_mutex * mutex;
 };

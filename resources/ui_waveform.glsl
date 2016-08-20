@@ -1,9 +1,9 @@
 
-layout(std430, binding=1) readonly buffer Wave {
+layout(std430,binding=1) buffer Wave {
     vec4 wav_data[];
 };
 
-layout(std430, binding=2) readonly buffer Beats {
+layout(std430,binding=2) buffer Beats {
     float beat_data[];
 };
 void main(void) {

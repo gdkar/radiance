@@ -130,12 +130,36 @@ int output_render(struct render * render)
 //    if(!render_freeze(render)) {
 //        return -1;
 //    }
+    auto tail = render->fence_tail.load();
+    auto fence = render->fence[tail&3].load();
+    if(fence) {
+        auto ret = GLenum{};
+        do{
+            auto ret = glClientWaitSync(fence, 0, 10000000);
+            if(ret == GL_CONDITION_SATISFIED || ret == GL_ALREADY_SIGNALED) {
+                INFO("Wait completed ok!.");
+                break;
+            }
+            if(ret == GL_WAIT_FAILED) {
+                glDeleteSync(fence);
+                render->fence[tail&3] = 0;
+                render->fence_tail++;
+                return -1;
+            }
+        }while(ret == GL_TIMEOUT_EXPIRED);
+    }else{
+        render->fence_tail++;
+        return -1;
+    }
     for (auto dev = output_device_head; dev; dev = dev->next) {
-        if (!dev->active) continue;
+        if (!dev->active)
+            continue;
         for (size_t i = 0; i < dev->pixels.length; i++)
             dev->pixels.colors[i] = render_sample(render, dev->pixels.xs[i], dev->pixels.ys[i]);
     }
-//    render_thaw(render);
+    glDeleteSync(fence);
+    render->fence[tail&3] = 0;
+    render->fence_tail++;
     output_render_count++;
     return 0;
 }
