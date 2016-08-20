@@ -38,8 +38,11 @@ int main(int argc, char* args[]) {
     current_loglevel = static_cast<loglevel>(config.debug.loglevel);
 
     ui_init();
-    for(auto & d : deck)
-        d.init();
+    for(auto i = 0ul; i < std::extent<decltype(deck)>::value; ++i) {
+        deck[i].init(tex_array, 16 * i);
+    }
+//    for(auto & d : deck)
+//        d.init();
 
     crossfader_init(&crossfader);
     render_init(&render, crossfader.tex_output);

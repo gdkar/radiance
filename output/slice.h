@@ -1,10 +1,12 @@
 #pragma once
 
 #include "util/common.h"
-#include "ui/render.h"
 
 #ifdef __cplusplus
+#include "ui/render.h"
 extern "C" {
+#else
+struct render;
 #endif
 struct output_pixels {
     size_t length;

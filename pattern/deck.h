@@ -6,9 +6,11 @@ struct deck {
     GLuint tex_input{0};
     GLuint fb_input{0};
     GLuint tex_output{0};
+    GLuint tex_array{};
+    int    layer;
     deck();
     virtual ~deck();
-    void init();
+    void init(GLuint tex_array, int layer);
     void term();
     int load_pattern(int slot, const char *prefix);
     int load_set(const char *prefix);

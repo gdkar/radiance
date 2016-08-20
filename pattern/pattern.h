@@ -10,10 +10,14 @@ struct pattern {
     double intensity{};
     double intensity_integral{};
 
+    GLuint tex_array;
+    int    tex_layer;
     std::vector<GLuint> tex;
+    std::vector<int>    layers;
     GLuint fb{};
     GLuint tex_output{};
-    pattern( const std::string &prefix);
+    int    out_layer{};
+    pattern( const std::string &prefix, GLuint tex_array, int layer);
     virtual ~pattern();
     void render(GLuint input_tex);
 };

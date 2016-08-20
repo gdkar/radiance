@@ -9,8 +9,11 @@
 
 deck::deck() = default;
 
-void deck::init()
+void deck::init(GLuint _ta, int _l)
 {
+    tex_array = _ta;
+    layer     = _l;
+
     patterns.resize(config.deck.n_patterns);
 
     tex_input = make_texture( config.pattern.master_width, config.pattern.master_height);
@@ -54,7 +57,7 @@ int deck::load_pattern(int slot, const char * prefix)
         }
     }
     try {
-        auto p = std::make_unique<pattern>(prefix);
+        auto p = std::make_unique<pattern>(prefix, tex_array, layer + (slot*4));
         p->intensity = intensity;
         patterns[slot].swap(p);
     }catch(const std::exception &e) {

@@ -21,15 +21,12 @@ uniform int  iIndicator;
 #define iRightDeckSelector iSelector.y
 #define iSelected iSelector.z
 
-uniform sampler1D iSpectrum;
-uniform sampler1D iWaveform;
-uniform sampler1D iBeats;
 uniform sampler2D iFrameLeft;
 uniform sampler2D iFrameRight;
 uniform sampler2D iStrips;
 uniform sampler2D iTexture;
-uniform sampler2D iText;
 
+uniform sampler2DArray iArray;
 // Utilities to convert from an RGB vec3 to an HSV vec3
 vec3 rgb2hsv(vec3 c);
 vec3 hsv2rgb(vec3 c);

@@ -14,6 +14,8 @@ static GLuint blit_shader;
 static GLuint crossfader_shader;
 static GLuint strip_shader;
 
+GLuint tex_array;
+int    tex_array_layers;
 static GLuint select_fb;
 static GLuint strip_fb;
 static GLuint select_tex;
@@ -216,6 +218,7 @@ void ui_init() {
     select_tex = make_texture(ww,wh);
 
     pattern_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns);
+    tex_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns * 4);
 
     glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, select_tex, 0);
@@ -725,21 +728,23 @@ static void ui_render(bool select) {
 
     location = glGetUniformLocation(pat_shader, "iTexture");
     glUniform1i(location, 0);
+    location = glGetUniformLocation(pat_shader, "iArray");
+    glUniform1i(location, 0);
+
     location = glGetUniformLocation(pat_shader, "iName");
     glUniform1i(location, 1);
     GLint pattern_intensity = glGetUniformLocation(pat_shader, "iIntensity");
     glProgramUniform2f(pat_shader, 0, ww, wh);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
     {
         for(int i = 0; i < config.ui.n_patterns; i++) {
             auto &p = deck[map_deck[i]].patterns[map_pattern[i]];
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, p ? p->tex_output : 0);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, 0);
             glVertexAttribI1i(2, i);
             glUniform1f(pattern_intensity, p ? p->intensity : 0);
             glUniform1i(location, select);
-
             blit(map_x[i],map_y[i],pw, ph);
         }
     }
@@ -941,7 +946,6 @@ void ui_run() {
             crossfader_render(&crossfader, deck[left_deck_selector].tex_output, deck[right_deck_selector].tex_output);
             render_readback(&render);
             ui_render(false);
-
             SDL_GL_SwapWindow(window);
             fps_frames++;
             double new_sample = seconds();

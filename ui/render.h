@@ -1,9 +1,6 @@
 #pragma once
 #include "util/common.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "util/semaphore.hpp"
 
 struct render {
     size_t pixel_count;
@@ -13,6 +10,7 @@ struct render {
     GLuint prog;
     GLuint fb;
     GLsync fence;
+    semaphore sem{};
     GLfloat * pixels;
     SDL_mutex * mutex;
 };
@@ -24,7 +22,3 @@ void render_term(struct render * render);
 bool render_freeze(struct render * render);
 void render_thaw(struct render * render);
 SDL_Color render_sample(struct render * render, float x, float y);
-
-#ifdef __cplusplus
-}
-#endif

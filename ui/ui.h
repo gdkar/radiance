@@ -20,6 +20,8 @@
 #include "ui/render.h"
 #include "output/slice.h"
 
+extern GLuint tex_array;
+extern int    tex_array_layers;
 
 void ui_init();
 void ui_run();

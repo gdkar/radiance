@@ -14,7 +14,9 @@
 
 
 static GLuint vao = 0;
-pattern::pattern(const std::string&prefix)
+pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
+: tex_array(tex_array)
+, tex_layer(tex_layer)
 {
     bool new_buffers = false;
     if(!vao) {
@@ -83,9 +85,12 @@ pattern::pattern(const std::string&prefix)
     CHECK_GL();
     glGenTextures(tex.size(), &tex[0]);
     CHECK_GL();
-
-    for(auto & t : tex) {
-        t = make_texture( config.pattern.master_width, config.pattern.master_height);
+    layers.resize(tex.size());
+    std::iota(layers.begin(),layers.end(),tex_layer);
+    for(auto i = 0ul; i < tex.size();++i) {
+        auto &t = tex[i];
+        t = make_view(GL_TEXTURE_2D,tex_array,GL_RGBA32F, layers[i],1);
+//        t = make_texture( config.pattern.master_width, config.pattern.master_height);
         glClearTexImage(t, 0, GL_RGBA, GL_FLOAT, nullptr);
         CHECK_GL();
     }
@@ -98,9 +103,8 @@ pattern::pattern(const std::string&prefix)
 
 pattern::~pattern()
 {
-    for(auto & shader : shader) {
-        glDeleteProgram(shader);
-        shader = 0;
+    for(auto sh : shader) {
+        glDeleteProgram(sh);
     }
     shader.clear();
     glDeleteTextures(tex.size(), &tex[0]);
@@ -148,7 +152,9 @@ void pattern::render(GLuint input_tex) {
         glDrawArrays(GL_POINTS, 0, 1);
         CHECK_GL();
         std::swap(tex.back(), tex[i]);
+        std::swap(layers.back(),layers[i]);
     }
     CHECK_GL();
     tex_output = tex.back();
+    out_layer  = layers.back();
 }

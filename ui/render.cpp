@@ -71,6 +71,7 @@ void render_readback(struct render * render)
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         CHECK_GL();
         SDL_UnlockMutex(render->mutex);
+        render->sem.post();
     }else{
         WARN("failed to initiate render readback: output thread is lagging.");
     }

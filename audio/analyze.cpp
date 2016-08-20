@@ -25,7 +25,7 @@ static double audio_thread_hi;
 static double audio_thread_mid;
 static double audio_thread_low;
 static double audio_thread_level;
-static struct btrack btrack; 
+static struct btrack btrack;
 std::unique_ptr<double[]> window;
 
 // BTrack-based Timebase
@@ -46,15 +46,16 @@ double analyze_audio_time_update(struct time_source * source, long wall_ms) {
     return wall_ms * MINUTES_PER_MILLISECOND * beats_per_minute;
 }
 */
-
-static double hann_window(int n) {
+template<class T = double>
+constexpr T hann_window(int n) {
     // Hann window
-    return 0.5 * (1 - cos(2 * M_PI * n / (config.audio.fft_length - 1)));
+    return T(0.5) * (1 - std::cos(T(2 * M_PI * n) / (config.audio.fft_length - 1)));
 }
 
 // Audio Analyze
 
-void analyze_init() {
+void analyze_init()
+{
     // Audio processing
     samp_queue = std::make_unique<float[]>(config.audio.fft_length);
     fft_in = std::make_unique<double[]>(config.audio.fft_length);
@@ -68,7 +69,6 @@ void analyze_init() {
     window = std::make_unique<double[]>(config.audio.fft_length);
     for(int i=0; i<config.audio.fft_length; i++)
         window[i] = hann_window(i);
-
     samp_queue_ptr = 0;
     waveform_ptr = 0;
     plan = fftw_plan_dft_r2c_1d(config.audio.fft_length, fft_in.get(), fft_out.get(), FFTW_ESTIMATE);
@@ -91,19 +91,16 @@ void analyze_chunk(chunk_pt chunk) {
         samp_queue[samp_queue_ptr] = chunk[i];
         samp_queue_ptr = (samp_queue_ptr + 1) % config.audio.fft_length;
     }
-
     // Window the data in queue and prepare it for FFTW
     for(int i=0; i<config.audio.fft_length; i++) {
-        fft_in[i] = samp_queue[(samp_queue_ptr + i) % config.audio.fft_length] * window[i];
+        fft_in[i] = samp_queue[((config.audio.fft_length/2) + samp_queue_ptr + i) % config.audio.fft_length] * window[i];
     }
-
     // Run the FFT
     fftw_execute(plan);
-
     // Convert to spectrum (log(freq))
     memset(spectrum.get(), 0, config.audio.spectrum_bins * sizeof spectrum[0]);
     memset(spectrum_n.get(), 0, config.audio.spectrum_bins * sizeof spectrum_n[0]);
-    double bin_factor = config.audio.spectrum_bins / log(config.audio.fft_length / 2);
+    auto bin_factor = config.audio.spectrum_bins / std::log(config.audio.fft_length / 2);
     for(int i=1; i<config.audio.fft_length / 2; i++) {
         int bin = (int)(log(i) * bin_factor);
         spectrum[bin] += fft_out[i][0] * fft_out[i][0] + fft_out[i][1] * fft_out[i][1];
