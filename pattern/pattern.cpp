@@ -151,6 +151,7 @@ void pattern::render(GLuint input_tex) {
 
 
         glDrawArrays(GL_POINTS, 0, 1);
+        glTextureBarrier();
         CHECK_GL();
         std::swap(tex.back(), tex[i]);
         std::swap(layers.back(),layers[i]);
