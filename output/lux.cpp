@@ -8,8 +8,9 @@
 #include "output/config.h"
 
 #define LUX_DEBUG INFO
+extern "C" {
 #include "liblux/lux.h"
-
+}
 #define LUX_BROADCAST_ADDRESS 0xFFFFFFFF
 
 enum lux_device_type {
@@ -59,13 +60,12 @@ static size_t n_spot_devices = 0;
 static int lux_strip_get_length (int fd, uint32_t lux_id, int flags) {
     // TODO: replace with get_descriptor
     struct lux_packet packet = {
-        .destination = lux_id,
-        .command = LUX_CMD_GET_LENGTH,
-        .index = 0,
-        .payload_length = 0,
+        lux_id,
+        LUX_CMD_GET_LENGTH,
+        0,
     };
     struct lux_packet response;
-    int rc = lux_command(fd, &packet, &response, flags);
+    int rc = lux_command(fd, &packet, &response, lux_flags(flags));
     if (rc < 0 || response.payload_length != 2) {
         ERROR("No/invalid response to length query on %#08x", lux_id);
         return -1;
@@ -81,14 +81,15 @@ static int lux_strip_get_length (int fd, uint32_t lux_id, int flags) {
 
 static int lux_strip_frame (int fd, uint32_t lux_id, unsigned char * data, size_t data_size) {
     struct lux_packet packet = {
-        .destination = lux_id,
-        .command = LUX_CMD_FRAME,
-        .index = 0,
-        .payload_length = data_size,
+        lux_id,
+        LUX_CMD_FRAME,
+        0,
+        {0},
+        uint16_t(data_size),
     };
     memcpy(packet.payload, data, data_size);
     LOGLIMIT(DEBUG, "Writing %ld bytes to %#08x", data_size, lux_id);
-    return lux_write(fd, &packet, 0);
+    return lux_write(fd, &packet, lux_flags());
 }
 
 /*
@@ -121,14 +122,13 @@ static int lux_frame_sync (int fd, uint32_t lux_id) {
 
 //
 
-static struct lux_channel * lux_channel_create (const char * uri) {
-    struct lux_channel * channel = calloc(1, sizeof *channel);
-    if (channel == NULL) MEMFAIL();
-
+static struct lux_channel * lux_channel_create (const char * uri)
+{
+    auto channel = new lux_channel{};
     channel->fd = lux_uri_open(uri);
     if (channel->fd < 0) {
         PERROR("Unable to open lux socket '%s'", uri);
-        free(channel);
+        delete channel;
         return NULL;
     }
     // Success!
@@ -144,7 +144,7 @@ static void lux_channel_destroy_all() {
         lux_close(channel->fd);
         struct lux_channel * prev_channel = channel;
         channel = channel->next;
-        free(prev_channel);
+        delete prev_channel;
     }
     channel_head = NULL;
 }
@@ -224,7 +224,7 @@ static void lux_device_term(struct lux_device * device) {
     //free(device->base.pixels.colors);
     //output_vertex_list_destroy(device->base.vertex_head);
     free(device->descriptor);
-    free(device->frame_buffer);
+    delete device->frame_buffer;
     //free(device->ui_name);
     if (device->base.prev != NULL)
         device->base.prev->next = device->base.next;
@@ -259,11 +259,11 @@ int output_lux_init() {
 
     // Initialize the devices, unconnected
     n_strip_devices = output_config.n_lux_strips;
-    strip_devices = calloc(sizeof *strip_devices, n_strip_devices);
+    strip_devices = new lux_device[n_strip_devices];
     if (strip_devices == NULL) MEMFAIL();
 
     n_spot_devices = output_config.n_lux_spots;
-    spot_devices = calloc(sizeof *spot_devices, n_spot_devices);
+    spot_devices = new lux_device[n_strip_devices];
     if (spot_devices == NULL) MEMFAIL();
 
     // Search the open lux channels for the configured devices
@@ -316,9 +316,7 @@ int output_lux_init() {
                 device->base.pixels.length = device->oversample * device->strip_length;
             }
 
-            device->frame_buffer = calloc(1, device->frame_buffer_size);
-            if (device->frame_buffer == NULL) MEMFAIL();
-
+            device->frame_buffer = new uint8_t[ device->frame_buffer_size];
             output_device_arrange(&device->base);
         }
     }
