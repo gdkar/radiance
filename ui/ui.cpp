@@ -168,9 +168,11 @@ void ui_init() {
     if(gl3wInit()) {
         FAIL("Could not initialize gl3w and load OpenGL functions.");
     }
-    glDebugMessageCallback(debug_callback,nullptr);
-    CHECK_GL();
-    glEnable(GL_DEBUG_OUTPUT);
+    if(int(get_loglevel()) <= int(LOGLEVEL_DEBUG)) {
+        glDebugMessageCallback(debug_callback,nullptr);
+        glEnable(GL_DEBUG_OUTPUT);
+        CHECK_GL();
+    }
     glGenBuffers(1,&vbo);
     glGenBuffers(1,&pat_vbo);
     GLfloat pat_vbo_data[16 * 5];
