@@ -21,7 +21,7 @@ void render_init(struct render * render, GLint texture)
        |GL_MAP_PERSISTENT_BIT
        |GL_MAP_COHERENT_BIT
        );
-    render->pixels = static_cast<GLfloat*>(
+/*    render->pixels = static_cast<GLfloat*>(
         glMapBufferRange(
             GL_PIXEL_PACK_BUFFER
           , 0
@@ -30,7 +30,7 @@ void render_init(struct render * render, GLint texture)
            |GL_MAP_PERSISTENT_BIT
            |GL_MAP_COHERENT_BIT
            )
-        );
+        );*/
     CHECK_GL();
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glGenFramebuffers(1, &render->fb);
@@ -57,7 +57,8 @@ void render_readback(struct render * render)
 {
     if(SDL_TryLockMutex(render->mutex) == 0) {
         auto head = render->fence_head.load();
-        if(render->fence[head&3].load()) {
+        auto tail = render->fence_tail.load();
+        if(render->fence[head&3].load() || head - tail == 4) {
             SDL_UnlockMutex(render->mutex);
             return;
         }

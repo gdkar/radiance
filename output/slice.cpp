@@ -151,12 +151,15 @@ int output_render(struct render * render)
         render->fence_tail++;
         return -1;
     }
+    render->pixels = (GLfloat*)glMapNamedBufferRange(render->pbo, render->pixel_count * 4 * sizeof(GLfloat) * (tail&3), render->pixel_count * 4 * sizeof(GLfloat), GL_MAP_READ_BIT|GL_MAP_PERSISTENT_BIT);
     for (auto dev = output_device_head; dev; dev = dev->next) {
         if (!dev->active)
             continue;
         for (size_t i = 0; i < dev->pixels.length; i++)
             dev->pixels.colors[i] = render_sample(render, dev->pixels.xs[i], dev->pixels.ys[i]);
     }
+    glUnmapNamedBuffer(render->pbo);
+    render->pixels=0;
     glDeleteSync(fence);
     render->fence[tail&3] = 0;
     render->fence_tail++;
