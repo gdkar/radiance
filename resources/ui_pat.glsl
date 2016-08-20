@@ -17,11 +17,11 @@ void main(void) {
         float df = max(rounded_rect_df(frag,vec2(75., 125.), vec2(45., 75.), 25.), 0.);
         if(df > RADIUS )
             discard;
-        f_color0.rgb = dataColor(ivec3(1, iPatternIndex,0));
-        f_color0.rgb = mix(f_color0.rgb, dataColor(ivec3(2, iPatternIndex, 0)), inBox(frag.xy, slider_pos - slider_size, slider_pos + slider_size));
+        f_color0.rgb = dataColor(ivec3(1, v_layer,0));
+        f_color0.rgb = mix(f_color0.rgb, dataColor(ivec3(2, int(v_layer), 0)), inBox(frag.xy, slider_pos - slider_size, slider_pos + slider_size));
     } else {
 
-        f_color0 = fancy_rect(frag,vec2(75.,125.), PAT_SIZE, iSelected == iPatternIndex + 1);
+        f_color0 = fancy_rect(frag,vec2(75.,125.), PAT_SIZE, iSelected == v_layer + 1);
         float df = max(rounded_rect_df(frag,vec2(75., 125.), vec2(45., 75.), 25.), 0.);
 
         f_color0 =  composite(f_color0,vec4(0.3, 0.3, 0.3, smoothstep(0., 1., df) - smoothstep(2., 5., df)));
@@ -35,7 +35,7 @@ void main(void) {
         vec3 grid = vec3(0.2) + vec3(0.1) * ((grid_cell.x + grid_cell.y) % 2);
         f_color0 = composite(f_color0, vec4(grid, inBox(frag.xy, preview_origin, preview_origin + preview_size)));
         vec2 p_uv = (frag - preview_origin) / preview_size;
-        vec4 p = texture(iPreview, p_uv);
+        vec4 p = texture(iTexture, p_uv);
         p.a *= inBox(frag, preview_origin, preview_origin + preview_size);
         f_color0 = composite(f_color0, p);
     }

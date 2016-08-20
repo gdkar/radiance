@@ -6,8 +6,8 @@ uniform layout(location = 0) vec2 u_global_size;
 uniform layout(location = 12) vec2 u_over_size = vec2(1.1,1.1);
 in flat vec2 vg_corner[];
 in flat vec2 vg_size  [];
-in flat float vg_layer [];
-out flat float v_layer;
+in flat int  vg_layer [];
+out flat int v_layer;
 out flat vec2 v_corner;
 out flat vec2 v_size;
 out vec2      v_uv;
@@ -16,7 +16,7 @@ void main()
 {
     vec2 size   = vg_size[0]  * 2/ u_global_size;
     vec2 corner = vg_corner[0] * 2 / u_global_size - vec2(1);
-    float _layer = vg_layer[0];
+    int _layer = vg_layer[0];
     vec2 _corner= vg_corner[0];
     vec2 _size  = vg_size[0];
     {

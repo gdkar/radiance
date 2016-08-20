@@ -3,7 +3,7 @@
 in flat vec2 v_corner;
 in flat vec2 v_size;
 in      vec2 v_uv;
-in flat float v_layer;
+in flat int  v_layer;
 out layout(location = 0) vec4 f_color0;
 
 // Time, measured in beats. Wraps around to 0 every 16 beats, [0.0, 16.0)

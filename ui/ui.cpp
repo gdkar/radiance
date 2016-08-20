@@ -254,9 +254,11 @@ void ui_init() {
     SDL_StopTextInput();
 
     gl_font = embedded_renderer(config.ui.font_atlas_width,config.ui.font_atlas_height,config.ui.fontsize,config.ui.font);
-    gl_font.open_font(config.ui.alt_font);
+//    gl_font.open_font(config.ui.alt_font);
     gl_font.set_color(1.,1.,1.,1.);
-    textbox_font = gl_font;
+    textbox_font = embedded_renderer(config.ui.font_atlas_width,config.ui.font_atlas_height,config.ui.fontsize,config.ui.font);
+//    gl_font.open_font(config.ui.alt_font);
+    textbox_font.set_color(1.,1.,1.,1.);
     // Open the font
     // Init statics
     pat_entry = false;
@@ -348,7 +350,7 @@ static void handle_key(SDL_KeyboardEvent * e) {
                 for(int i=0; i<config.ui.n_patterns; i++) {
                     if(map_selection[i] == selected) {
                         gl_font.clear();
-                        gl_font.m_vbo_dirty = true;
+                        gl_font.set_dirty();
                         if(pat_entry_text[0] == ':') {
                             if (deck[map_deck[i]].load_set(pat_entry_text+1) == 0) {
                                 // TODO: Load in the correct pattern names
@@ -547,7 +549,7 @@ static void ui_render(bool select) {
             glUseProgram(strip_shader);
             glProgramUniform2f(strip_shader, 0, 1., 1.);//config.pattern.master_width, config.pattern.master_height);
 
-            location = glGetUniformLocation(strip_shader, "iPreview");
+            location = glGetUniformLocation(strip_shader, "iTexture");
             glProgramUniform1i(strip_shader, location, 0);
             location = glGetUniformLocation(strip_shader, "iIndicator");
             glProgramUniform1i(strip_shader,location, strip_indicator);
@@ -634,12 +636,8 @@ static void ui_render(bool select) {
     glUniform2f(3, ww, wh);
     location = glGetUniformLocation(main_shader, "iSelection");
     glUniform1i(location, select);
-    location = glGetUniformLocation(main_shader, "iSelected");
-    glUniform1i(location, selected);
-    location = glGetUniformLocation(main_shader, "iLeftDeckSelector");
-    glUniform1i(location, left_deck_selector);
-    location = glGetUniformLocation(main_shader, "iRightDeckSelector");
-    glUniform1i(location, right_deck_selector);
+    location = glGetUniformLocation(main_shader, "iSelector");
+    glUniform3i(location, left_deck_selector,right_deck_selector,selected);
     CHECK_GL();
 
     fill(ww, wh);
@@ -684,9 +682,9 @@ static void ui_render(bool select) {
     glUseProgram(crossfader_shader);
     location = glGetUniformLocation(crossfader_shader, "iSelection");
     glUniform1i(location, select);
-    location = glGetUniformLocation(crossfader_shader, "iSelected");
-    glUniform1i(location, selected);
-    location = glGetUniformLocation(crossfader_shader, "iPreview");
+    location = glGetUniformLocation(main_shader, "iSelector");
+    glUniform3i(location, left_deck_selector,right_deck_selector,selected);
+    location = glGetUniformLocation(crossfader_shader, "iTexture");
     glUniform1i(location, 0);
     location = glGetUniformLocation(crossfader_shader, "iStrips");
     glUniform1i(location, 1);
@@ -708,16 +706,15 @@ static void ui_render(bool select) {
     int pw = config.ui.pattern_width;
     int ph = config.ui.pattern_height;
     glUseProgram(pat_shader);
-    location = glGetUniformLocation(pat_shader, "iSelected");
-    glUniform1i(location, selected);
+    location = glGetUniformLocation(main_shader, "iSelector");
+    glUniform3i(location, left_deck_selector,right_deck_selector,selected);
     location = glGetUniformLocation(pat_shader, "iSelection");
     glUniform1i(location, select);
 
-    location = glGetUniformLocation(pat_shader, "iPreview");
+    location = glGetUniformLocation(pat_shader, "iTexture");
     glUniform1i(location, 0);
     location = glGetUniformLocation(pat_shader, "iName");
     glUniform1i(location, 1);
-    GLint pattern_index = glGetUniformLocation(pat_shader, "iPatternIndex");
     GLint pattern_intensity = glGetUniformLocation(pat_shader, "iIntensity");
     glProgramUniform2f(pat_shader, 0, ww, wh);
     {
@@ -727,7 +724,7 @@ static void ui_render(bool select) {
             glBindTexture(GL_TEXTURE_2D, p ? p->tex_output : 0);
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, 0);
-            glUniform1i(pattern_index, i);
+            glVertexAttribI1i(2, i);
             glUniform1f(pattern_intensity, p ? p->intensity : 0);
             glUniform1i(location, select);
 
@@ -737,7 +734,7 @@ static void ui_render(bool select) {
 
     for(int i = 0; i < config.ui.n_patterns; i++) {
         if(auto &pat = deck[map_deck[i]].patterns[map_pattern[i]]) {
-            if(pat->name.size() && gl_font.m_vbo_dirty) {
+            if(pat->name.size() && gl_font.get_dirty()) {
                 gl_font.print(map_x[i] + config.ui.pattern_name_x, map_y[i] + config.ui.pattern_height -config.ui.pattern_name_y, pat->name);
             }
         }
@@ -746,7 +743,7 @@ static void ui_render(bool select) {
         if(pat_entry) {
             for(int i = 0; i < config.ui.n_patterns; i++) {
                 if(map_selection[i] == selected) {
-                    if(gl_font.m_vbo_dirty) {
+                    if(gl_font.get_dirty()) {
                         gl_font.m_scale *= 2;
                         gl_font.active_font(config.ui.alt_font);
                         gl_font.print(map_x[i], map_y[i] + config.ui.pattern_height - gl_font.height(), pat_entry_text);
@@ -811,7 +808,7 @@ static void handle_text(const char * text) {
             strcat(pat_entry_text, text);
         }
         gl_font.clear();
-        gl_font.m_vbo_dirty=true;
+        gl_font.set_dirty();
     }
 }
 static void handle_mouse_down() {

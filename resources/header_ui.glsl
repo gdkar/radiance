@@ -1,39 +1,13 @@
 #version 430
 
-in  flat vec2 v_corner;
+//in  flat vec2 v_corner;
 in  flat vec2 v_size;
 in      vec2 v_uv;
-in  flat float v_layer;
+in  flat int v_layer;
 out layout(location = 0) vec4 f_color0;
-
-// Time, measured in beats. Wraps around to 0 every 16 beats, [0.0, 16.0)
-uniform layout(location = 1) float iTime;
-// Audio levels, high/mid/low/level, [0.0, 1.0]
-uniform layout(location = 2) vec4 iAudio;
-
-#define iAudioLow iAudio.x
-#define iAudioMid iAudio.y
-#define iAudioHi  iAudio.z
-#define iAudioLevel iAudio.w
-
-// Intensity slider, [0.0, 1.0]
 
 uniform layout(location = 3) float iIntensity;
 
-// Intensity slider integrated with respect to wall time mod 1024, [0.0, 1024.0)
-uniform layout(location = 4) float iIntensityIntegral;
-
-// (Ideal) output rate in frames per second
-uniform layout(location = 5) float iFPS;
-
-// Output of the previous pattern
-uniform layout(location = 6) sampler2D iFrame;
-
-// Previous outputs of the other channels (e.g. foo.1.glsl) 
-uniform layout(location = 7) sampler2D iChannel[3];
-
-uniform layout(location = 10) sampler2DArray iAllPatterns;
-uniform layout(location = 11) int  iPatternIndex;
 #define M_PI 3.1415926535897932384626433832795
 
 //
@@ -41,20 +15,17 @@ uniform layout(location = 11) int  iPatternIndex;
 //
 uniform bool iLeftOnTop;
 uniform bool iSelection;
-uniform int  iBins;
-uniform int  iLeftDeckSelector;
-uniform int  iLength;
-uniform int  iRightDeckSelector;
-uniform int  iSelected;
+uniform ivec3 iSelector;
 uniform int  iIndicator;
-uniform float iLayer;
+#define iLeftDeckSelector iSelector.x
+#define iRightDeckSelector iSelector.y
+#define iSelected iSelector.z
 
 uniform sampler1D iSpectrum;
 uniform sampler1D iWaveform;
 uniform sampler1D iBeats;
 uniform sampler2D iFrameLeft;
 uniform sampler2D iFrameRight;
-uniform sampler2D iPreview;
 uniform sampler2D iStrips;
 uniform sampler2D iTexture;
 uniform sampler2D iText;
@@ -84,7 +55,7 @@ const float RADIUS=25.;
 const vec2  PAT_SIZE = vec2(45., 75.);
 
 float sdCapsule(vec2 p, vec2 a, vec2 b, vec2 r);
-void  glow(vec2 p, inout vec4 color);
+void  glow(vec2 frag,vec2 p, inout vec4 color);
 
 struct slider_params {
     vec4    track_color;
