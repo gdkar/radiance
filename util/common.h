@@ -51,6 +51,11 @@ _Pragma("once")
 #include <sstream>
 #include <locale>
 #include <clocale>
+#include <map>
+#include <vector>
+#include <list>
+#include <deque>
+#include <unordered_map>
 #else
 #include <stdint.h>
 #include <stddef.h>

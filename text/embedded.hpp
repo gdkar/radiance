@@ -6,7 +6,6 @@ _Pragma("once")
 #include <map>
 #include <vector>
 #include <locale>
-#include <codecvt>
 #include <cmath>
 #include <numeric>
 #include <algorithm>
@@ -17,7 +16,7 @@ _Pragma("once")
 #include <cstdio>
 #include <cstring>
 #include <freetype-gl/vec234.h>
-#include "DejaVuSans.h"
+#include "ProggyTinySZ.h"
 using namespace ftgl;
 
 struct embedded_font {

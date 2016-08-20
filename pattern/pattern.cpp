@@ -14,8 +14,7 @@
 
 
 static GLuint vao = 0;
-static GLuint vbo = 0;
-pattern::pattern(const char * prefix)
+pattern::pattern(const std::string&prefix)
 {
     bool new_buffers = false;
     if(!vao) {
@@ -25,7 +24,6 @@ pattern::pattern(const char * prefix)
         float w = config.pattern.master_width,h =  config.pattern.master_height;
         float x = 0.f, y = 0.f;
 
-    if(!vbo)  {}
     if(new_buffers){
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(vao);
@@ -40,7 +38,7 @@ pattern::pattern(const char * prefix)
     int n = 0;
     for(;;) {
         struct stat statbuf;
-        auto filename = std::string{config.pattern.dir} + std::string{prefix} + "." + std::to_string(n) + ".glsl";
+        auto filename = std::string{config.pattern.dir} + prefix + "." + std::to_string(n) + ".glsl";
         int rc = stat(filename.c_str(), &statbuf);
 
         if (rc != 0 || S_ISDIR(statbuf.st_mode))
@@ -48,7 +46,7 @@ pattern::pattern(const char * prefix)
         n++;
     }
     if(n == 0) {
-        ERROR("Could not find any shaders for %s", prefix);
+        ERROR("Could not find any shaders for %s", prefix.c_str());
         throw std::system_error(EINVAL,std::system_category(),"failed to load shader.");
     }
     shader.clear();
@@ -57,7 +55,7 @@ pattern::pattern(const char * prefix)
 
     auto success = true;
     for(auto i = 0; i < n; i++) {
-        auto filename = std::string{config.pattern.dir} + std::string{prefix} + "." + std::to_string(i) + ".glsl";
+        auto filename = std::string{config.pattern.dir} + prefix + "." + std::to_string(i) + ".glsl";
         auto h = load_program({"#lib.glsl"},"#header.glsl",{filename.c_str()});
         if(!h) {
             success = false;
@@ -96,9 +94,6 @@ pattern::pattern(const char * prefix)
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     CHECK_GL();
 
-    uni_tex.resize(shader.size());
-    std::iota(uni_tex.begin(),uni_tex.end(),1);
-    // Some OpenGL API garbage
 }
 
 pattern::~pattern()

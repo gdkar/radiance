@@ -31,11 +31,9 @@
  * policies, either expressed or implied, of Nicolas P. Rougier.
  * ============================================================================
  */
+#pragma once
 #include <stddef.h>
 #include <stdint.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct
 {
@@ -68,7 +66,7 @@ typedef struct
     size_t glyphs_count;
     texture_glyph_t glyphs[96];
 } texture_font_t;
-
+#ifdef EMBEDDED_IMPLEMENTATION
 texture_font_t proggy_tiny = {
  256, 256, 1, 
  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2219,6 +2217,5 @@ texture_font_t proggy_tiny = {
   {126, 16, 7, 0, 9, 13.500000f, 0.000000f, 0.515625f, 0.300781f, 0.578125f, 0.328125f, 0, 0 },
  }
 };
-#ifdef __cplusplus
-}
 #endif
+

@@ -25,7 +25,7 @@ void embedded_font::create(std::shared_ptr<GLuint> tex, int pt_size, const std::
 {
     destroy();
     m_tex = tex;
-    m_d = &dejavu_sans;
+    m_d = &proggy_tiny;
     if(!m_d)
         return;
     for(auto & glyph : m_d->glyphs) {
@@ -120,7 +120,7 @@ embedded_renderer::embedded_renderer(int w, int h, int pt_size, const std::strin
 void embedded_renderer::getShader()
 {
     if(!m_shader) {
-        m_shader = load_program_noheader("#sdf.v.glsl","#sdf.f.glsl");
+        m_shader = load_program_noheader("#ui_sdf.v.glsl","#ui_sdf.f.glsl");
         glProgramUniform1i(m_shader, 1, 0);
     }
 }

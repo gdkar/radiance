@@ -10,16 +10,10 @@ struct pattern {
     double intensity{};
     double intensity_integral{};
 
-    int flip{};
-    int next_tex;
     std::vector<GLuint> tex;
-    std::vector<GLint> uni_tex;
     GLuint fb{};
     GLuint tex_output{};
-    pattern( const char *prefix );
-    pattern( const std::string& prefix )
-    : pattern(prefix.c_str())
-    {}
+    pattern( const std::string &prefix);
     virtual ~pattern();
     void render(GLuint input_tex);
 };
