@@ -217,7 +217,7 @@ void ui_init() {
     select_tex = make_texture(ww,wh);
 
     pattern_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns);
-    tex_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns * 4);
+    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, config.ui.n_patterns * 4);
 
     glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, select_tex, 0);

@@ -29,8 +29,9 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
     if(new_buffers){
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(vao);
-        glVertexAttrib2f(0, x, y);
+        glVertexAttrib2f(0,x, y);
         glVertexAttrib2f(1,w, h);
+        glVertexAttribI1i(2, 0);
     }
 
     intensity = 0;

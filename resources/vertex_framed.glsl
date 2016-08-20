@@ -5,7 +5,6 @@
 layout(location = 0) in vec2 a_corner;
 layout(location = 1)in vec2  a_size;
 layout(location = 2) in int a_layer;
-layout(location = 12) uniform vec2 u_over_size = vec2(1.1,1.1);
 flat out vec2 vg_corner;
 flat out vec2 vg_size;
 flat out int  vg_layer;

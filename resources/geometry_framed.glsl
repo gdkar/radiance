@@ -1,9 +1,11 @@
 #version 330
+#extension GL_ARB_explicit_attrib_location: enable
+#extension GL_ARB_explicit_uniform_location: enable
 
 layout(points) in;
 layout(triangle_strip, max_vertices=4) out;
-uniform vec2 u_global_size;
-uniform vec2 u_over_size;
+layout(location = 12) uniform vec2 u_over_size = vec2(1.1,1.1);
+layout(location = 0) uniform vec2 u_global_size;
 flat in vec2 vg_corner[];
 flat in vec2 vg_size  [];
 flat in int  vg_layer [];
