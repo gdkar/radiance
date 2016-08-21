@@ -297,8 +297,6 @@ void ui_init() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 
-    glBindVertexArray(0);
-
     // Init OpenGL
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0, 0, 0, 0);
@@ -312,7 +310,6 @@ void ui_init() {
     // Init select texture
     select_tex = make_texture(ww,wh);
 
-//    pattern_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns);
     tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, 128);
 
     glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
@@ -321,24 +318,11 @@ void ui_init() {
     // Init pattern textures
 
     glGenBuffers(1,&buf_spectrum_data);
-//    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum_data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_spectrum_data);
-//    glNamedBufferStorage(buf_spectrum_data, config.audio.spectrum_bins * sizeof(GLfloat),NULL, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
-    // Spectrum data texture
-//    tex_spectrum_data = make_texture(config.audio.spectrum_bins);
     glGenBuffers(1,&buf_waveform_data);
-//    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum_data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_waveform_data);
-//    glNamedBufferStorage(buf_waveform_data, config.audio.waveform_length * 4 * sizeof(GLfloat),NULL, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
     glGenBuffers(1,&buf_waveform_beats_data);
-//    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf_spectrum_data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_waveform_beats_data);
-//    glNamedBufferStorage(buf_waveform_beats_data, config.audio.waveform_length * sizeof(GLfloat), NULL,GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
-
-    // Waveform data texture
-///    tex_waveform_data = make_texture( config.audio.waveform_length);
-//    tex_waveform_beats_data = make_texture( config.audio.waveform_length);
-    // Waveform UI element
 
     // Strip indicators
     strip_texture = make_texture ( config.pattern.master_width, config.pattern.master_height);
@@ -384,10 +368,8 @@ void ui_init() {
     SDL_StopTextInput();
 
     gl_font = embedded_renderer(config.ui.font_atlas_width,config.ui.font_atlas_height,config.ui.fontsize,config.ui.font);
-//    gl_font.open_font(config.ui.alt_font);
     gl_font.set_color(1.,1.,1.,1.);
     textbox_font = embedded_renderer(config.ui.font_atlas_width,config.ui.font_atlas_height,config.ui.fontsize,config.ui.font);
-//    gl_font.open_font(config.ui.alt_font);
     textbox_font.set_color(1.,1.,1.,1.);
     // Open the font
     // Init statics
@@ -658,12 +640,6 @@ static void handle_key(SDL_KeyboardEvent * e) {
         }
     }
 }
-
-/*static void blit(float x, float y, float w, float h) {
-    bind_vao_fill_vbo(x, y, w, h);
-    glDrawArrays(GL_POINTS, 0, 1);
-}*/
-
 static void ui_render(bool select) {
     // Render strip indicators
     if(!select) {
@@ -681,7 +657,6 @@ static void ui_render(bool select) {
                 if(!strip_vbo || !strip_vbo) {
                     glGenBuffers(1,&strip_vbo);
                     glBindBuffer(GL_ARRAY_BUFFER, strip_vbo);
-    //                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 4, NULL, GL_STATIC_DRAW);
                     auto vvec = std::vector<GLfloat>{};
                     auto vertex2d = [&vvec](auto x, auto y) { vvec.push_back((x + 1)/2); vvec.push_back((y+1)/2);};
                     for(auto d = output_device_head; d ; d = d->next) {
@@ -727,19 +702,9 @@ static void ui_render(bool select) {
         }
     }
 
-//    // Render the patterns
-
-    // Render the crossfader
-
-
-/*    auto sw = 0;
-    auto sh = 0;
-    auto vw = 0;
-    auto vh = 0;*/
     if(!select) {
         analyze_render(buf_spectrum_data, buf_waveform_data, buf_waveform_beats_data);
     }
-    glEnable(GL_BLEND);
     // Render to screen (or select fb)
     if(select) {
         glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
@@ -755,16 +720,13 @@ static void ui_render(bool select) {
     rclass.prepare();
     rclass.bind();
     main_res->draw();
-//    fill(ww, wh);
+    glEnable(GL_BLEND);
     if(!select) {
-          glUseProgram(spectrum_shader);
-          location = glGetUniformLocation(spectrum_shader, "iBins");
-          glUniform1i(location, config.audio.spectrum_bins);
           GLuint buffers[] = {  buf_waveform_data,buf_waveform_beats_data, buf_spectrum_data};
           glBindBuffersBase(GL_SHADER_STORAGE_BUFFER, 1, 3, buffers);
 
+          glUseProgram(spectrum_shader);
           spectrum_res->draw();
-
           glUseProgram(waveform_shader);
           waveform_res->draw();
     }
