@@ -12,6 +12,6 @@ void main(void) {
 
     float a = clamp(n * n * 5., 0., 1.) * smoothstep(0., 0.2, iIntensity);
 
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = texture(iArray,vec3( v_uv,iFrameLayer));
     f_color0 = composite(f_color0, vec4(0., 1., 0., a));
 }

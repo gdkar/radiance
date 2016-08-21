@@ -4,5 +4,5 @@ void main(void) {
     float factor = 1. - 3. * iIntensity * iAudioLevel * sawtooth(iTime, 0.1);
     factor = clamp(0.05, 2., factor);
 
-    f_color0 = texture(iFrame, (v_uv - 0.5) * factor + 0.5);
+    f_color0 = texture(iArray, vec3((v_uv - 0.5) * factor + 0.5,iFrameLayer));
 }

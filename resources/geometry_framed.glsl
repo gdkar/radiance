@@ -26,6 +26,7 @@ void main()
     {
         v_pid    = vg_pid[0];
         v_layer  = _layer;
+        gl_Layer = _layer;
         v_corner = _corner;
         v_size   = _size;
         v_uv     = vec2(0,0) + ( 1. - u_over_size);
@@ -35,6 +36,7 @@ void main()
     {
         v_pid    = vg_pid[0];
         v_layer  = _layer;
+        gl_Layer = _layer;
         v_corner = _corner;
         v_size   = vg_size[0];
         v_uv     = vec2(1. - u_over_size.x, u_over_size.y) ;
@@ -44,6 +46,7 @@ void main()
     {
         v_pid    = vg_pid[0];
         v_corner = _corner;
+        gl_Layer = _layer;
         v_layer  = _layer;
         v_size   = _size;
         v_uv     = vec2(u_over_size.x,1. - u_over_size.y) ;
@@ -53,6 +56,7 @@ void main()
     {
         v_pid    = vg_pid[0];
         v_layer  = _layer;
+        gl_Layer = _layer;
         v_corner = _corner;
         v_size   = _size;
         v_uv     = vec2(1,1) * u_over_size;

@@ -1,7 +1,7 @@
 // Fire from the bottom
 
 void main(void) {
-    f_color0 = texture(iFrame, v_uv);
+    f_color0 = texture(iArray, vec3(v_uv,iFrameLayer));
 
     vec3 noise_input = vec3(v_uv * 3. + vec2(0., -iTime * 0.3), iTime * 0.1);
     vec2 shift = (vec2(noise(noise_input), noise(noise_input + 100.)) - 0.5);

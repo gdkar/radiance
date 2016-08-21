@@ -29,12 +29,12 @@ layout(location = 4) uniform float iIntensityIntegral;
 layout(location = 5) uniform float iFPS;
 
 // Output of the previous pattern
-layout(location = 6) uniform sampler2D iFrame;
-
+//layout(location = 6) uniform sampler2D iFrame;
+layout(location = 6) uniform int iFrameLayer;
 // Previous outputs of the other channels (e.g. foo.1.glsl) 
-layout(location = 7) uniform sampler2D iChannel[3];
-
-layout(location = 10) uniform sampler2DArray iAllPatterns;
+//layout(location = 7) uniform sampler2D iChannel[3];
+layout(location = 7) uniform int iChannelLayers[3];
+layout(location = 10) uniform sampler2DArray iArray;
 layout(location = 11) uniform int  iPatternIndex;
 #define M_PI 3.1415926535897932384626433832795
 

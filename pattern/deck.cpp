@@ -114,13 +114,15 @@ int deck::load_set(const char * name)
 
 void deck::render() {
     tex_output = tex_input;
+    out_layer  = in_layer;
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_input);
+    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex_array,0);
     glDisable(GL_BLEND);
     glViewport(0,0,config.pattern.master_width,config.pattern.master_height);
     for(auto &pat : patterns) {
         if(pat) {
-            pat->render(tex_output);
-            tex_output = pat->tex_output;
+            pat->render(tex_output, out_layer);
+            out_layer = pat->out_layer;
         }
     }
 }

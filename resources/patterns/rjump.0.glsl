@@ -1,7 +1,7 @@
 // Shift the hue on the beat
 
 void main(void) {
-    f_color0 = texture(iFrame, v_uv);
+    f_color0 = texture(iArray, vec3(v_uv,iFrameLayer));
 
     float t;
     if (iIntensity < 0.85)

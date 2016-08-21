@@ -1,7 +1,7 @@
 // Fileball in the center
 
 void main(void) {
-    f_color0 = texture(iFrame, v_uv);
+    f_color0 = texture(iArray,vec3(v_uv,iFrame));
 
     vec3 noise_input = vec3(length(v_uv - vec2(0.5)) * 3. - iTime, abs(atan(v_uv.y - 0.5, v_uv.x - 0.5)), iTime * 0.3);
     vec2 shift = (vec2(noise(noise_input), noise(noise_input + 100.)) - 0.5);

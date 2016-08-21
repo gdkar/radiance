@@ -26,8 +26,8 @@ uniform int  iIndicator;
 #define iRightDeckSelector iSelector.y
 #define iSelected iSelector.z
 
-uniform sampler2D iFrameLeft;
-uniform sampler2D iFrameRight;
+uniform int iFrameLeft;
+uniform int iFrameRight;
 uniform sampler2D iStrips;
 uniform sampler2D iTexture;
 

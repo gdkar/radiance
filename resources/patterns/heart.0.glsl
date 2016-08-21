@@ -1,7 +1,7 @@
 // Pink heart
 
 void main(void) {
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = texture(iArray,vec3(v_uv,iFrameLayer));
 
     // heart from shadertoy
     vec2 uv = v_uv + vec2(-0.5, -0.55);

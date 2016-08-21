@@ -116,30 +116,34 @@ pattern::~pattern()
     fb = 0;
 }
 
-void pattern::render(GLuint input_tex)
+void pattern::render(GLuint input_tex, int input_layer)
 {
 //    glBindBuffer(GL_ARRAY_BUFFER,vbo);
     glBindVertexArray(vao);
 
     intensity_integral = std::fmod(intensity_integral + intensity / config.ui.fps, MAX_INTEGRAL);
-    glBindTextures(1,tex.size() - 1, tex.data());
-    glBindTextures(0, 1, &input_tex);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
+//    glBindTextures(1,tex.size() - 1, tex.data());
+//    glBindTextures(0, 1, &input_tex);
     CHECK_GL();
     for (auto i = int(shader.size()) - 1; i >= 0; --i) {
         glUseProgram(shader[i]);
         glBindTextures(i + 1, 1, &tex[i]);
-        glFramebufferTexture(
+/*        glFramebufferTexture(
             GL_FRAMEBUFFER
           , GL_COLOR_ATTACHMENT0
           , tex.back()
-          , 0);
+          , 0);*/
 
         glUniform1f(1, time_master.beat_frac + time_master.beat_index);
         glUniform4f(2, audio_low, audio_mid, audio_hi, audio_level);
         glUniform1f(3, intensity);
         glUniform1f(4, intensity_integral);
-
-
+        glUniform1i(6, input_layer);
+        glUniform1iv(7, layers.size()-1,&layers[0]);
+        glVertexAttribI1i(2, layers.back());
+        glClearTexSubImage(tex_array, 0, 0, 0, layers.back(), config.pattern.master_width,config.pattern.master_height,1,GL_RGBA,GL_FLOAT,nullptr);
         glDrawArrays(GL_POINTS, 0, 1);
         glTextureBarrier();
         std::swap(tex.back(), tex[i]);

@@ -19,5 +19,5 @@ struct pattern {
     int    out_layer{};
     pattern( const std::string &prefix, GLuint tex_array, int layer);
     virtual ~pattern();
-    void render(GLuint input_tex);
+    void render(GLuint input_tex, int input_layer);
 };

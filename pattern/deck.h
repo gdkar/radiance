@@ -8,6 +8,8 @@ struct deck {
     GLuint tex_output{0};
     GLuint tex_array{};
     int    layer;
+    int    in_layer{};
+    int    out_layer{};
     deck();
     virtual ~deck();
     void init(GLuint tex_array, int layer);

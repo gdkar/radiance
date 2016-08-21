@@ -333,12 +333,21 @@ void ui_init() {
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    if((main_shader = load_program({"#lib.glsl","#lib_ui.glsl"}, "#header_ui.glsl",{"#ui_main.glsl"})) == 0) FAIL("Could not load UI main shader!\n%s", get_load_program_error().c_str());
+    if((main_shader = load_program(
+        {"#vertex_framed.glsl"},{"#geometry_flat.glsl"},
+        {"#lib.glsl","#lib_ui.glsl"}, "#header_ui.glsl",{"#ui_main.glsl"})) == 0) FAIL("Could not load UI main shader!\n%s", get_load_program_error().c_str());
     glProgramUniform2f(main_shader, 0, config.ui.window_width, config.ui.window_height);
-    if((pat_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_pat.glsl"})) == 0) FAIL("Could not load UI pattern shader!\n%s", get_load_program_error().c_str());
-    if((crossfader_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_crossfader.glsl"})) == 0) FAIL("Could not load UI crossfader shader!\n%s", get_load_program_error().c_str());
-    if((waveform_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_waveform.glsl"})) == 0) FAIL("Could not load UI waveform shader!\n%s", get_load_program_error().c_str());
-    if((spectrum_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_spectrum.glsl"})) == 0) FAIL("Could not load UI spectrum shader!\n%s", get_load_program_error().c_str());
+    if((pat_shader = load_program(
+        {"#vertex_framed.glsl"},{"#geometry_flat.glsl"},
+        {"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_pat.glsl"})) == 0) FAIL("Could not load UI pattern shader!\n%s", get_load_program_error().c_str());
+    if((crossfader_shader = load_program(
+        {"#vertex_framed.glsl"},{"#geometry_flat.glsl"},
+        {"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_crossfader.glsl"})) == 0) FAIL("Could not load UI crossfader shader!\n%s", get_load_program_error().c_str());
+    if((waveform_shader = load_program(
+        {"#vertex_framed.glsl"},{"#geometry_flat.glsl"},
+        {"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_waveform.glsl"})) == 0) FAIL("Could not load UI waveform shader!\n%s", get_load_program_error().c_str());
+    if((spectrum_shader = load_program(
+        {"#vertex_framed.glsl"},{"#geometry_flat.glsl"},{"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_spectrum.glsl"})) == 0) FAIL("Could not load UI spectrum shader!\n%s", get_load_program_error().c_str());
     if((strip_shader = load_program({"#strip.v.glsl"},{},{"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#strip.f.glsl"})) == 0) FAIL("Could not load strip indicator shader!\n%s", get_load_program_error().c_str());
     glProgramUniform2f(strip_shader, 0, 1., 1.);//config.pattern.master_width, config.pattern.master_height);
     glProgramUniform2f(spectrum_shader, 0, ww, wh);
@@ -944,7 +953,7 @@ void ui_run() {
                 mouse_down = false;
             }
             for(auto & d : deck) d.render();
-            crossfader_render(&crossfader, deck[left_deck_selector].tex_output, deck[right_deck_selector].tex_output);
+            crossfader_render(&crossfader, deck[left_deck_selector].out_layer, deck[right_deck_selector].out_layer);
             render_readback(&render);
             ui_render(false);
             SDL_GL_SwapWindow(window);
