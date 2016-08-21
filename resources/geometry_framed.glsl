@@ -9,9 +9,11 @@ layout(location = 0) uniform vec2 u_global_size;
 flat in vec2 vg_corner[];
 flat in vec2 vg_size  [];
 flat in int  vg_layer [];
+flat in int  vg_pid   [];
 flat out vec2 v_corner;
 flat out vec2 v_size;
 flat out int v_layer;
+flat out int v_pid;
 out vec2 v_uv;
 
 void main()
@@ -22,6 +24,7 @@ void main()
     vec2 _corner= vg_corner[0];
     vec2 _size  = vg_size[0];
     {
+        v_pid    = vg_pid[0];
         v_layer  = _layer;
         v_corner = _corner;
         v_size   = _size;
@@ -30,6 +33,7 @@ void main()
         EmitVertex();
     }
     {
+        v_pid    = vg_pid[0];
         v_layer  = _layer;
         v_corner = _corner;
         v_size   = vg_size[0];
@@ -38,6 +42,7 @@ void main()
         EmitVertex();
     }
     {
+        v_pid    = vg_pid[0];
         v_corner = _corner;
         v_layer  = _layer;
         v_size   = _size;
@@ -46,6 +51,7 @@ void main()
         EmitVertex();
     }
     {
+        v_pid    = vg_pid[0];
         v_layer  = _layer;
         v_corner = _corner;
         v_size   = _size;

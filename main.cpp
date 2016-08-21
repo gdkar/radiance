@@ -32,7 +32,7 @@ double audio_mid;
 double audio_low;
 double audio_level;
 
-int main(int argc, char* args[]) {
+int main(int argc, char* argv[]) {
     config_init(&config);
     config_load(&config, "resources/config.ini");
     current_loglevel = static_cast<loglevel>(config.debug.loglevel);
@@ -51,7 +51,9 @@ int main(int argc, char* args[]) {
     audio_start();
     midi_start();
     output_init(&render);
-
+    for(auto i = 0; i < int(std::extent<decltype(deck)>::value )&& (i+1 < argc); ++i) {
+        deck[i].load_set(argv[i+1]);
+    }
     ui_run();
     ui_term();
 

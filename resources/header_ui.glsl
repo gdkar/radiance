@@ -7,6 +7,7 @@
 //in  flat vec2 v_corner;
 flat in vec2 v_size;
 in      vec2 v_uv;
+flat in int v_pid;
 flat in int v_layer;
 layout(location = 0) out vec4 f_color0;
 

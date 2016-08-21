@@ -30,8 +30,6 @@ static GLuint strip_vbo      = 0;
 static int    strip_vbo_size = 0;
 static GLuint vao;
 static GLuint vbo;
-static GLuint pat_vbo;
-static GLuint pat_vao;
 // Window
 static int ww; // Window width
 static int wh; // Window height
@@ -280,37 +278,16 @@ void ui_init() {
     }
     rclass.create();
 
-    for(auto i = 0; i < 16; ++i) {
-        pattern_res.push_back(rclass.reserve(map_x[i],map_y[i],config.ui.pattern_width,config.ui.pattern_height));
-    }
     crossfader_res = rclass.reserve(config.ui.crossfader_x,config.ui.crossfader_y,config.ui.crossfader_width,config.ui.crossfader_height);
     spectrum_res = rclass.reserve(config.ui.spectrum_x,config.ui.spectrum_y,config.ui.spectrum_width,config.ui.spectrum_height);
     waveform_res = rclass.reserve(config.ui.waveform_x,config.ui.waveform_y,config.ui.waveform_width,config.ui.waveform_height);
     strips_res = rclass.reserve(0,0,config.pattern.master_width,config.pattern.master_height);
     main_res = rclass.reserve(0,0,config.ui.window_width,config.ui.window_height);
-    rclass.prepare();
-
-    glGenBuffers(1,&vbo);
-    glGenBuffers(1,&pat_vbo);
-    GLfloat pat_vbo_data[16 * 5];
     for(auto i = 0; i < 16; ++i) {
-        pat_vbo_data[5*i+0] = map_x[i];
-        pat_vbo_data[5*i+1] = map_y[i];
-        pat_vbo_data[5*i+2] = config.ui.pattern_width;
-        pat_vbo_data[5*i+3] = config.ui.pattern_height;
-        pat_vbo_data[5*i+4] = i;
+        pattern_res.push_back(rclass.reserve(map_x[i],map_y[i],config.ui.pattern_width,config.ui.pattern_height));
     }
-    glBindBuffer(GL_ARRAY_BUFFER,pat_vbo);
-    glBufferData(GL_ARRAY_BUFFER,sizeof(pat_vbo_data), pat_vbo_data,GL_STATIC_DRAW);
-    glGenVertexArrays(1,&pat_vao);
-    glBindVertexArray(pat_vao);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(4*sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
-
+    rclass.prepare();
+    glGenBuffers(1,&vbo);
     glGenVertexArrays(1,&vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glNamedBufferData(vbo, sizeof(GLfloat) * 4, NULL, GL_DYNAMIC_DRAW);
@@ -336,7 +313,7 @@ void ui_init() {
     select_tex = make_texture(ww,wh);
 
 //    pattern_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns);
-//    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, config.ui.n_patterns * 4);
+    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, 128);
 
     glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, select_tex, 0);
@@ -373,15 +350,36 @@ void ui_init() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if((main_shader = load_program({"#lib.glsl","#lib_ui.glsl"}, "#header_ui.glsl",{"#ui_main.glsl"})) == 0) FAIL("Could not load UI main shader!\n%s", get_load_program_error().c_str());
+    glProgramUniform2f(main_shader, 0, config.ui.window_width, config.ui.window_height);
     if((pat_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_pat.glsl"})) == 0) FAIL("Could not load UI pattern shader!\n%s", get_load_program_error().c_str());
     if((crossfader_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_crossfader.glsl"})) == 0) FAIL("Could not load UI crossfader shader!\n%s", get_load_program_error().c_str());
     if((waveform_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_waveform.glsl"})) == 0) FAIL("Could not load UI waveform shader!\n%s", get_load_program_error().c_str());
     if((spectrum_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#ui_spectrum.glsl"})) == 0) FAIL("Could not load UI spectrum shader!\n%s", get_load_program_error().c_str());
     if((strip_shader = load_program({"#strip.v.glsl"},{},{"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#strip.f.glsl"})) == 0) FAIL("Could not load strip indicator shader!\n%s", get_load_program_error().c_str());
-    if((blit_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#blit.glsl"})) == 0) FAIL("Could not load blit shader!\n%s", get_load_program_error().c_str());
-    glProgramUniform2f(waveform_shader,12,1.2f,1.2f);
+    glProgramUniform2f(strip_shader, 0, 1., 1.);//config.pattern.master_width, config.pattern.master_height);
+    glProgramUniform2f(spectrum_shader, 0, ww, wh);
+    glProgramUniform2f(waveform_shader, 0, ww, wh);
     glProgramUniform2f(spectrum_shader,12,1.2f,1.2f);
+    glProgramUniform2f(waveform_shader,12,1.2f,1.2f);
+    glProgramUniform2f(crossfader_shader, 0, ww, wh);
+    glProgramUniform2f(pat_shader, 0, ww, wh);
+
+
+    auto location = glGetUniformLocation(strip_shader, "iTexture");
+    glProgramUniform1i(strip_shader, location, 0);
+    location = glGetUniformLocation(pat_shader, "iTexture");
+    glProgramUniform1i(pat_shader,location, 0);
+    location = glGetUniformLocation(crossfader_shader, "iTexture");
+    glProgramUniform1i(crossfader_shader,location, 0);
+    location = glGetUniformLocation(crossfader_shader, "iStrips");
+    glProgramUniform1i(crossfader_shader,location, 1);
+    location = glGetUniformLocation(waveform_shader, "iLength");
+    glProgramUniform1i(waveform_shader,location, config.audio.waveform_length);
+
+    if((blit_shader = load_program({"#lib.glsl","#lib_ui.glsl"},"#header_ui.glsl",{"#blit.glsl"})) == 0) FAIL("Could not load blit shader!\n%s", get_load_program_error().c_str());
+    glProgramUniform2f(blit_shader,0,ww,wh);
     glProgramUniform2f(pat_shader,12,1.2f,1.2f);
+    glProgramUniform2f(crossfader_shader,12,1.2f,1.2f);
     // Stop text input
     SDL_StopTextInput();
 
@@ -667,72 +665,66 @@ static void handle_key(SDL_KeyboardEvent * e) {
 }*/
 
 static void ui_render(bool select) {
-    GLint location;
     // Render strip indicators
     if(!select) {
-    glDisable(GL_BLEND);
-    switch(strip_indicator) {
-        case STRIPS_SOLID:
-        case STRIPS_COLORED:
-            glBindFramebuffer(GL_FRAMEBUFFER, strip_fb);
-            glUseProgram(strip_shader);
-            glProgramUniform2f(strip_shader, 0, 1., 1.);//config.pattern.master_width, config.pattern.master_height);
+        switch(strip_indicator) {
+            case STRIPS_SOLID:
+            case STRIPS_COLORED: {
+                glDisable(GL_BLEND);
+                glBindFramebuffer(GL_FRAMEBUFFER, strip_fb);
+                glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+                glUseProgram(strip_shader);
+                auto location = glGetUniformLocation(strip_shader, "iIndicator");
+                glProgramUniform1i(strip_shader,location, strip_indicator);
+                glBindTextures(0, 1, &crossfader.tex_output);
 
-            location = glGetUniformLocation(strip_shader, "iTexture");
-            glProgramUniform1i(strip_shader, location, 0);
-            location = glGetUniformLocation(strip_shader, "iIndicator");
-            glProgramUniform1i(strip_shader,location, strip_indicator);
-
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, crossfader.tex_output);
-
-            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-            if(!strip_vbo || !strip_vbo) {
-                glGenBuffers(1,&strip_vbo);
-                glBindBuffer(GL_ARRAY_BUFFER, strip_vbo);
-//                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 4, NULL, GL_STATIC_DRAW);
-                auto vvec = std::vector<GLfloat>{};
-                auto vertex2d = [&vvec](auto x, auto y) { vvec.push_back((x + 1)/2); vvec.push_back((y+1)/2);};
-                for(auto d = output_device_head; d ; d = d->next) {
-                    bool first = true;
-                    double x;
-                    double y;
-                    for(auto v = d->vertex_head; v ; v = v->next) {
-                        if(!first) {
-                            auto dx = v->x - x;
-                            auto dy = v->y - y;
-                            auto dl = hypot(dx, dy);
-                            dx = config.ui.strip_thickness * dx / dl;
-                            dy = config.ui.strip_thickness * dy / dl;
-                            vertex2d(x + dy, y - dx);
-                            vertex2d(v->x + dy, v->y - dx);
-                            vertex2d(x - dy, y + dx);
-                            vertex2d(v->x + dy, v->y - dx);
-                            vertex2d(v->x - dy, v->y + dx);
-                            vertex2d(x - dy, y + dx);
-                        } else {
-                            first = false;
+                if(!strip_vbo || !strip_vbo) {
+                    glGenBuffers(1,&strip_vbo);
+                    glBindBuffer(GL_ARRAY_BUFFER, strip_vbo);
+    //                glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 4, NULL, GL_STATIC_DRAW);
+                    auto vvec = std::vector<GLfloat>{};
+                    auto vertex2d = [&vvec](auto x, auto y) { vvec.push_back((x + 1)/2); vvec.push_back((y+1)/2);};
+                    for(auto d = output_device_head; d ; d = d->next) {
+                        bool first = true;
+                        double x;
+                        double y;
+                        for(auto v = d->vertex_head; v ; v = v->next) {
+                            if(!first) {
+                                auto dx = v->x - x;
+                                auto dy = v->y - y;
+                                auto dl = hypot(dx, dy);
+                                dx = config.ui.strip_thickness * dx / dl;
+                                dy = config.ui.strip_thickness * dy / dl;
+                                vertex2d(x + dy, y - dx);
+                                vertex2d(v->x + dy, v->y - dx);
+                                vertex2d(x - dy, y + dx);
+                                vertex2d(v->x + dy, v->y - dx);
+                                vertex2d(v->x - dy, v->y + dx);
+                                vertex2d(x - dy, y + dx);
+                            } else {
+                                first = false;
+                            }
+                            x = v->x;
+                            y = v->y;
                         }
-                        x = v->x;
-                        y = v->y;
                     }
+                    glNamedBufferData(strip_vbo, vvec.size() * sizeof(vvec[0]), &vvec[0], GL_STATIC_DRAW);
+                    strip_vbo_size = vvec.size();
+                    glGenVertexArrays(1,&strip_vao);
+                    glBindVertexArray(strip_vao);
+                    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+                    glEnableVertexAttribArray(0);
                 }
-                glNamedBufferData(strip_vbo, vvec.size() * sizeof(vvec[0]), &vvec[0], GL_STATIC_DRAW);
-                strip_vbo_size = vvec.size();
-                glGenVertexArrays(1,&strip_vao);
-                glBindVertexArray(strip_vao);
-                glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
-                glEnableVertexAttribArray(0);
-            }
 
-            glBindBuffer(GL_ARRAY_BUFFER, strip_vbo);
-            glBindVertexArray(strip_vao);
-            glDrawArrays(GL_TRIANGLES, 0, strip_vbo_size / 2);
-            break;
-        default:
-        case STRIPS_NONE:
-            break;
-    }
+                glBindBuffer(GL_ARRAY_BUFFER, strip_vbo);
+                glBindVertexArray(strip_vao);
+                glDrawArrays(GL_TRIANGLES, 0, strip_vbo_size / 2);
+                break;
+            }
+            default:
+            case STRIPS_NONE:
+                break;
+        }
     }
 
 //    // Render the patterns
@@ -744,128 +736,68 @@ static void ui_render(bool select) {
     auto sh = 0;
     auto vw = 0;
     auto vh = 0;*/
-
+    if(!select) {
+        analyze_render(buf_spectrum_data, buf_waveform_data, buf_waveform_beats_data);
+    }
     glEnable(GL_BLEND);
-
     // Render to screen (or select fb)
     if(select) {
         glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-
     glViewport(0, 0, ww, wh);
-
-    CHECK_GL();
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
     glUseProgram(main_shader);
-    glProgramUniform2f(main_shader, 0, ww, wh);
-
-    glUniform2f(3, ww, wh);
-    location = glGetUniformLocation(main_shader, "iSelection");
+    auto location = glGetUniformLocation(main_shader, "iSelection");
     glUniform1i(location, select);
     location = glGetUniformLocation(main_shader, "iSelector");
     glUniform3i(location, left_deck_selector,right_deck_selector,selected);
-    CHECK_GL();
     rclass.prepare();
     rclass.bind();
     main_res->draw();
 //    fill(ww, wh);
-    CHECK_GL();
     if(!select) {
-        analyze_render(buf_spectrum_data, buf_waveform_data, buf_waveform_beats_data);
-        // Render the spectrum
-//        sw = config.ui.spectrum_width;
-//        sh = config.ui.spectrum_height;
-        glUseProgram(spectrum_shader);
-        location = glGetUniformLocation(spectrum_shader, "iBins");
-       glUniform1i(location, config.audio.spectrum_bins);
-//        location = glGetUniformLocation(spectrum_shader, "iSpectrum");
-//        glUniform1i(location, 0);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_1D, tex_spectrum_data);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_spectrum_data);
-        glProgramUniform2f(spectrum_shader, 0, ww, wh);
-        spectrum_res->draw();
-//        blit(config.ui.spectrum_x, config.ui.spectrum_y, sw, sh);
-        // Render the waveform
+          glUseProgram(spectrum_shader);
+          location = glGetUniformLocation(spectrum_shader, "iBins");
+          glUniform1i(location, config.audio.spectrum_bins);
+          GLuint buffers[] = {  buf_waveform_data,buf_waveform_beats_data, buf_spectrum_data};
+          glBindBuffersBase(GL_SHADER_STORAGE_BUFFER, 1, 3, buffers);
 
-//        vw = config.ui.waveform_width;
-//        vh = config.ui.waveform_height;
-        glUseProgram(waveform_shader);
-        glProgramUniform2f(waveform_shader, 0, ww, wh);
-        location = glGetUniformLocation(waveform_shader, "iLength");
-        glUniform1i(location, config.audio.waveform_length);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_waveform_data);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_waveform_beats_data);
-//        location = glGetUniformLocation(waveform_shader, "iWaveform");
-///        glUniform1i(location, 0);
-//        location = glGetUniformLocation(waveform_shader, "iBeats");
-//        glUniform1i(location, 1);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_1D, tex_waveform_data);
-//        glActiveTexture(GL_TEXTURE1);
-//        glBindTexture(GL_TEXTURE_1D, tex_waveform_beats_data);
-        waveform_res->draw();
-//        blit(config.ui.waveform_x, config.ui.waveform_y, vw, vh);
+          spectrum_res->draw();
+
+          glUseProgram(waveform_shader);
+          waveform_res->draw();
     }
-//    auto cw = config.ui.crossfader_width;
-//    auto ch = config.ui.crossfader_height;
     glUseProgram(crossfader_shader);
     location = glGetUniformLocation(crossfader_shader, "iSelection");
     glUniform1i(location, select);
     location = glGetUniformLocation(main_shader, "iSelector");
     glUniform3i(location, left_deck_selector,right_deck_selector,selected);
-    location = glGetUniformLocation(crossfader_shader, "iTexture");
-    glUniform1i(location, 0);
-    location = glGetUniformLocation(crossfader_shader, "iStrips");
-    glUniform1i(location, 1);
     location = glGetUniformLocation(crossfader_shader, "iIntensity");
     glUniform1f(location, crossfader.position);
     location = glGetUniformLocation(crossfader_shader, "iIndicator");
     glUniform1i(location, strip_indicator);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, crossfader.tex_output);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, strip_texture);
-
-    glProgramUniform2f(crossfader_shader, 0, ww, wh);
-    glProgramUniform2f(crossfader_shader, 12, 1.2,1.2);
+    {
+        GLuint texs[] = { crossfader.tex_output,strip_texture};
+        glBindTextures(0, 2, texs);
+    }
     crossfader_res->draw();
-//    blit(config.ui.crossfader_x, config.ui.crossfader_y, cw, ch);
-
-//    int pw = config.ui.pattern_width;
-//    int ph = config.ui.pattern_height;
     glUseProgram(pat_shader);
     location = glGetUniformLocation(pat_shader, "iSelector");
-    glUniform3i(location, left_deck_selector,right_deck_selector,selected);
+    glProgramUniform3i(pat_shader,location, left_deck_selector,right_deck_selector,selected);
     location = glGetUniformLocation(pat_shader, "iSelection");
-    glUniform1i(location, select);
-
-    location = glGetUniformLocation(pat_shader, "iTexture");
-    glUniform1i(location, 0);
-    location = glGetUniformLocation(pat_shader, "iArray");
-    glUniform1i(location, 0);
-
-    location = glGetUniformLocation(pat_shader, "iName");
-    glUniform1i(location, 1);
-    auto pattern_intensity = glGetUniformLocation(pat_shader, "iIntensity");
-    glProgramUniform2f(pat_shader, 0, ww, wh);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glProgramUniform1i(pat_shader,location, select);
+    {
+        GLuint texs[] = { tex_array };
+        glBindTextures(0, 1, texs);
+    }
     {
         for(int i = 0; i < config.ui.n_patterns; i++) {
             auto &p = deck[map_deck[i]].patterns[map_pattern[i]];
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, p ? p->tex_output : 0);
-            glVertexAttribI1i(2, i);
-            glUniform1f(pattern_intensity, p ? p->intensity : 0);
-            glUniform1i(location, select);
+            glVertexAttribI1i(3, i);
+            glVertexAttribI1i(2, p?p->out_layer : 65);
+            glUniform1f(3, p ? p->intensity : 0);
             pattern_res[i]->draw();
-//            blit(map_x[i],map_y[i],pw, ph);
         }
     }
     if(!select) {
@@ -896,9 +828,9 @@ struct rgba {
 static struct rgba test_hit(int x, int y) {
     struct rgba data;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, select_fb);
     glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &data);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     return data;
 }
 
@@ -983,7 +915,6 @@ void ui_run() {
         int    fps_frames = 0;
 
         while(!quit) {
-
             while(SDL_PollEvent(&e) != 0) {
                 if (midi_command_event != (Uint32) -1 &&
                     e.type == midi_command_event) {
@@ -1050,8 +981,7 @@ void ui_run() {
                 handle_mouse_down();
                 mouse_down = false;
             }
-            for(auto & d : deck)
-                d.render();
+            for(auto & d : deck) d.render();
             crossfader_render(&crossfader, deck[left_deck_selector].tex_output, deck[right_deck_selector].tex_output);
             render_readback(&render);
             ui_render(false);

@@ -68,6 +68,7 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
             WARN("Unable to load shader %s", filename.c_str());
             success = false;
         } else {
+            glProgramUniform1f(h,5, config.ui.fps);
             glProgramUniform2f(h, 0,  config.pattern.master_width, config.pattern.master_height);
             GLint tex_assignments[3] = { 1, 2, 3};
             glProgramUniform1iv(h, 7, 3, tex_assignments);
@@ -90,8 +91,8 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
     std::iota(layers.begin(),layers.end(),tex_layer);
     for(auto i = 0ul; i < tex.size();++i) {
         auto &t = tex[i];
-//        t = make_view(GL_TEXTURE_2D,tex_array,GL_RGBA32F, layers[i],1);
-        t = make_texture( config.pattern.master_width, config.pattern.master_height);
+        t = make_view(GL_TEXTURE_2D,tex_array,GL_RGBA32F, layers[i],1);
+//        t = make_texture( config.pattern.master_width, config.pattern.master_height);
         glClearTexImage(t, 0, GL_RGBA, GL_FLOAT, nullptr);
         CHECK_GL();
     }
@@ -115,44 +116,32 @@ pattern::~pattern()
     fb = 0;
 }
 
-void pattern::render(GLuint input_tex) {
-
+void pattern::render(GLuint input_tex)
+{
 //    glBindBuffer(GL_ARRAY_BUFFER,vbo);
     glBindVertexArray(vao);
-    glViewport(0, 0, config.pattern.master_width, config.pattern.master_height);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-    CHECK_GL();
 
     intensity_integral = std::fmod(intensity_integral + intensity / config.ui.fps, MAX_INTEGRAL);
     glBindTextures(1,tex.size() - 1, tex.data());
-    glDisable(GL_BLEND);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, input_tex);
+    glBindTextures(0, 1, &input_tex);
     CHECK_GL();
     for (auto i = int(shader.size()) - 1; i >= 0; --i) {
         glUseProgram(shader[i]);
-
-        glActiveTexture(GL_TEXTURE1 + i);
-        glBindTexture(GL_TEXTURE_2D, tex[i]);
-        CHECK_GL();
+        glBindTextures(i + 1, 1, &tex[i]);
         glFramebufferTexture(
             GL_FRAMEBUFFER
           , GL_COLOR_ATTACHMENT0
           , tex.back()
           , 0);
 
-        CHECK_GL();
         glUniform1f(1, time_master.beat_frac + time_master.beat_index);
         glUniform4f(2, audio_low, audio_mid, audio_hi, audio_level);
         glUniform1f(3, intensity);
         glUniform1f(4, intensity_integral);
-        glUniform1f(5, config.ui.fps);
 
 
         glDrawArrays(GL_POINTS, 0, 1);
         glTextureBarrier();
-        CHECK_GL();
         std::swap(tex.back(), tex[i]);
         std::swap(layers.back(),layers[i]);
     }

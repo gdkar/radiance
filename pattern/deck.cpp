@@ -17,8 +17,8 @@ void deck::init(GLuint _ta, int _l)
     patterns.resize(config.deck.n_patterns);
 
     tex_input = make_texture( config.pattern.master_width, config.pattern.master_height);
-//    glGenFramebuffers(1, &fb_input);
-//    glBindFramebuffer(GL_FRAMEBUFFER,fb_input);
+    glGenFramebuffers(1, &fb_input);
+    glBindFramebuffer(GL_FRAMEBUFFER,fb_input);
 //    glNamedFramebufferTexture(fb_input, GL_COLOR_ATTACHMENT0, tex_input, 0);
     glClearTexImage(tex_input, 0, GL_RGBA,GL_FLOAT,nullptr);
     CHECK_GL();
@@ -28,8 +28,8 @@ void deck::term()
 {
     if(tex_input)
         glDeleteTextures(1, &tex_input);
-//    if(fb_input)
-//        glDeleteFramebuffers(1, &fb_input);
+    if(fb_input)
+        glDeleteFramebuffers(1, &fb_input);
     if(tex_output)
         glDeleteTextures(1, &tex_output);
     tex_input = 0;
@@ -114,6 +114,9 @@ int deck::load_set(const char * name)
 
 void deck::render() {
     tex_output = tex_input;
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_input);
+    glDisable(GL_BLEND);
+    glViewport(0,0,config.pattern.master_width,config.pattern.master_height);
     for(auto &pat : patterns) {
         if(pat) {
             pat->render(tex_output);
