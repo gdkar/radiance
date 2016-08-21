@@ -7,9 +7,9 @@ void main(void) {
     float w = 4.;
     vec2 frag = v_size * v_uv;
     f_color0 = vec4(0.);
-    f_color0 = composite(f_color0, fancy_rect(frag,vec2(256., 100.), vec2(225., 70.), false));
+    f_color0 = composite(f_color0, fancy_rect(frag,vec2(30., 30.), vec2(260., 140.), false));
 
-    float df = max(rounded_rect_df(frag,vec2(256., 100.), vec2(226., 70.), 25.), 0.);
+    float df = max(rounded_rect_df(frag,vec2(30., 30.), vec2(260., 140.), 25.), 0.);
 
     float shrink_freq = 190. / 200.;
     float shrink_mag = 90. / 100.;

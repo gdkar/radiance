@@ -54,7 +54,7 @@ struct embedded_renderer {
         vec2 position;
         vec2 texcoord;
         vec4 fg;
-        friend std::ostream &operator<<(std::ostream &ost, const vertex &vtx)
+            friend std::ostream &operator<<(std::ostream &ost, const vertex &vtx)
         {
             return (ost << " < vertex @ " << static_cast<const void*>(&vtx)
                         << " : (x,y) == ( " << vtx.position.x << ", " << vtx.position.y << " ),"

@@ -26,23 +26,23 @@ vec4 fancy_rect(vec2,vec2,vec2,bool);
 const float RADIUS=25.;
 const vec2  PAT_SIZE = vec2(45., 75.);
 
-float rounded_rect_df(vec2 coord,vec2 center, vec2 size, float radius) {
-    return length(max(abs(coord- center) - size, 0.0)) - radius;
+float rounded_rect_df(vec2 coord,vec2 corner, vec2 size, float radius) {
+    vec2 center = corner + size*0.5;
+    return length(max(abs(coord- center) - size * 0.5, 0.0)) - radius;
 }
-vec4 fancy_rect(vec2 coord, vec2 center, vec2 size, bool selected) {
+vec4 fancy_rect(vec2 coord, vec2 corner, vec2 size, bool selected) {
     vec4 c;
     vec4 color;
-
     if(selected) {
-        float highlight_df = rounded_rect_df(coord,center, size, RADIUS - 10.);
+        float highlight_df = rounded_rect_df(coord,corner, size, RADIUS - 10.);
         color = vec4(1., 1., 0., 0.5 * (1. - smoothstep(0., 50., max(highlight_df, 0.))));
     } else {
-        float shadow_df = rounded_rect_df(coord,center + vec2(10., -10.), size, RADIUS - 10.);
+        float shadow_df = rounded_rect_df(coord,corner + vec2(10., -10.), size, RADIUS - 10.);
         color = vec4(0., 0., 0., 0.5 * (1. - smoothstep(0., 20., max(shadow_df, 0.))));
     }
 
-    float df = rounded_rect_df(coord,center, size, RADIUS);
-    c = vec4(vec3(0.1) * (center.y + size.y + RADIUS - (coord).y) / (2. * (size.y + RADIUS)), clamp(1. - df, 0., 1.));
+    float df = rounded_rect_df(coord,corner, size, RADIUS);
+    c = vec4(vec3(0.1) * (corner.y + size.y + RADIUS - (coord).y) / (2. * (size.y + RADIUS)), clamp(1. - df, 0., 1.));
     color = composite(color, c);
     return color;
 }

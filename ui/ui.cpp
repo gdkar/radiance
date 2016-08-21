@@ -19,7 +19,6 @@ int    tex_array_layers;
 static GLuint select_fb;
 static GLuint strip_fb;
 static GLuint select_tex;
-static GLuint pattern_array;
 static GLuint buf_spectrum_data;
 static GLuint spectrum_shader;
 static GLuint buf_waveform_data;
@@ -197,6 +196,8 @@ embedded_renderer textbox_font{};
 static const SDL_Color font_color = {255, 255, 255, 255};
 
 // Pat entry
+float       pat_entry_x{};
+float       pat_entry_y{};
 static bool pat_entry;
 static char pat_entry_text[255];
 
@@ -334,8 +335,8 @@ void ui_init() {
     // Init select texture
     select_tex = make_texture(ww,wh);
 
-    pattern_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns);
-    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, config.ui.n_patterns * 4);
+//    pattern_array = make_texture(GL_RGBA32F, config.ui.pattern_width, config.ui.pattern_height, config.ui.n_patterns);
+//    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, config.ui.n_patterns * 4);
 
     glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, select_tex, 0);
@@ -535,11 +536,8 @@ static void handle_key(SDL_KeyboardEvent * e) {
                 break;
             case SDLK_DELETE:
             case SDLK_d:
-                for(int i=0; i<config.ui.n_patterns; i++) {
-                    if(map_selection[i] == selected) {
-                        deck[map_deck[i]].unload_pattern( map_pattern[i]);
-                        break;
-                    }
+                if(selected >= 1 && selected < 17) {
+                    deck[map_deck[selected-1]].unload_pattern( map_pattern[selected-1]);
                 }
                 break;
             case SDLK_BACKQUOTE:
@@ -583,30 +581,30 @@ static void handle_key(SDL_KeyboardEvent * e) {
             case SDLK_0:
                 set_slider_to(selected, 1);
                 break;
-            case SDLK_SEMICOLON: if(!shift) break;
-                for(int i=0; i<config.ui.n_patterns; i++) {
-                    if(map_selection[i] == selected) {
-                        pat_entry = true;
-                        pat_entry_text[0] = '\0';
-                        SDL_StartTextInput();
-                    }
+            case SDLK_SEMICOLON: if(!shift) break; {
+                if(selected >= 1 && selected < 17){
+                    pat_entry = true;
+                    pat_entry_x = map_x[selected-1];
+                    pat_entry_y = map_y[selected-1];
+                    pat_entry_text[0] = '\0';
+                    textbox_font.clear();
+                    textbox_font.set_dirty();
+                    SDL_StartTextInput();
+                }
+            }
+            case SDLK_RETURN:{
+                int i = selected-1;
+                if(i < 4) {
+                    left_deck_selector = 0;
+                } else if(i < 8) {
+                    right_deck_selector = 1;
+                } else if(i < 12) {
+                    left_deck_selector = 2;
+                } else if(i < 16) {
+                    right_deck_selector = 3;
                 }
                 break;
-            case SDLK_RETURN:
-                for(int i=0; i<config.ui.n_patterns; i++) {
-                    if(map_selection[i] == selected) {
-                        if(i < 4) {
-                            left_deck_selector = 0;
-                        } else if(i < 8) {
-                            right_deck_selector = 1;
-                        } else if(i < 12) {
-                            left_deck_selector = 2;
-                        } else if(i < 16) {
-                            right_deck_selector = 3;
-                        }
-                    }
-                }
-                break;
+        }
             case SDLK_LEFTBRACKET:
                 if(left_deck_selector == 0) {
                     left_deck_selector = 2;
@@ -770,6 +768,7 @@ static void ui_render(bool select) {
     location = glGetUniformLocation(main_shader, "iSelector");
     glUniform3i(location, left_deck_selector,right_deck_selector,selected);
     CHECK_GL();
+    rclass.prepare();
     rclass.bind();
     main_res->draw();
 //    fill(ww, wh);
@@ -869,31 +868,20 @@ static void ui_render(bool select) {
 //            blit(map_x[i],map_y[i],pw, ph);
         }
     }
-
-    for(int i = 0; i < config.ui.n_patterns; i++) {
-        if(auto &pat = deck[map_deck[i]].patterns[map_pattern[i]]) {
-            if(pat->name.size() && gl_font.get_dirty()) {
-                gl_font.print(map_x[i] + config.ui.pattern_name_x, map_y[i] + config.ui.pattern_height -config.ui.pattern_name_y, pat->name);
-            }
-        }
-    }
     if(!select) {
-        if(pat_entry) {
-            for(int i = 0; i < config.ui.n_patterns; i++) {
-                if(map_selection[i] == selected) {
-                    if(gl_font.get_dirty()) {
-                        gl_font.m_scale *= 2;
-                        gl_font.active_font(config.ui.alt_font);
-                        gl_font.print(map_x[i], map_y[i] + config.ui.pattern_height - gl_font.height(), pat_entry_text);
-                        gl_font.active_font(config.ui.font);
-                        gl_font.m_scale /= 2;
-                    }
-                    CHECK_GL();
-                    break;
+        for(int i = 0; i < config.ui.n_patterns; i++) {
+            if(auto &pat = deck[map_deck[i]].patterns[map_pattern[i]]) {
+                if(pat->name.size() && gl_font.get_dirty()) {
+                    gl_font.print(map_x[i] + config.ui.pattern_name_x, map_y[i] + config.ui.pattern_height -config.ui.pattern_name_y, pat->name);
                 }
             }
         }
         gl_font.render(ww, wh);
+        if(pat_entry){
+            textbox_font.clear();
+            textbox_font.print(config.ui.pat_entry_x + pat_entry_x,config.ui.pat_entry_y + pat_entry_y,std::string{config.ui.pat_entry_prompt} + pat_entry_text);
+            textbox_font.render(ww,wh);
+        }
     }
     CHECK_GL();
 }
@@ -945,8 +933,8 @@ static void handle_text(const char * text) {
         if(strlen(pat_entry_text) + strlen(text) < sizeof(pat_entry_text)) {
             strcat(pat_entry_text, text);
         }
-        gl_font.clear();
-        gl_font.set_dirty();
+        textbox_font.clear();
+        textbox_font.set_dirty();
     }
 }
 static void handle_mouse_down() {

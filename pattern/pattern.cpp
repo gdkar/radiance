@@ -90,8 +90,8 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
     std::iota(layers.begin(),layers.end(),tex_layer);
     for(auto i = 0ul; i < tex.size();++i) {
         auto &t = tex[i];
-        t = make_view(GL_TEXTURE_2D,tex_array,GL_RGBA32F, layers[i],1);
-//        t = make_texture( config.pattern.master_width, config.pattern.master_height);
+//        t = make_view(GL_TEXTURE_2D,tex_array,GL_RGBA32F, layers[i],1);
+        t = make_texture( config.pattern.master_width, config.pattern.master_height);
         glClearTexImage(t, 0, GL_RGBA, GL_FLOAT, nullptr);
         CHECK_GL();
     }

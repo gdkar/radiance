@@ -14,15 +14,15 @@ void main(void) {
     if(iSelection) {
         f_color0.a = 1.;
 //        float df = max(rounded_rect_df(frag,vec2(75., 125.), vec2(45., 75.), 25.), 0.);
-        float df = max(rounded_rect_df(frag,vec2(75., 125.), vec2(45., 75.), 25.), 0.);
+        float df = max(rounded_rect_df(frag,vec2(30., 50.), vec2(90., 150.), 25.), 0.);
         if(df > RADIUS )
             discard;
         f_color0.rgb = dataColor(ivec3(1, v_layer,0));
         f_color0.rgb = mix(f_color0.rgb, dataColor(ivec3(2, int(v_layer), 0)), inBox(frag.xy, slider_pos - slider_size, slider_pos + slider_size));
     } else {
 
-        f_color0 = fancy_rect(frag,vec2(75.,125.), PAT_SIZE, iSelected == v_layer + 1);
-        float df = max(rounded_rect_df(frag,vec2(75., 125.), vec2(45., 75.), 25.), 0.);
+        f_color0 = fancy_rect(frag,vec2(30.,50.), vec2(90,150), iSelected == v_layer + 1);
+        float df = max(rounded_rect_df(frag,vec2(30., 50.), vec2(90., 150.), 25.), 0.);
 
         f_color0 =  composite(f_color0,vec4(0.3, 0.3, 0.3, smoothstep(0., 1., df) - smoothstep(2., 5., df)));
 
