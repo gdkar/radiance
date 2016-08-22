@@ -1,7 +1,7 @@
 // Reduce number of colors
 
 void main(void) {
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = textureFrame( v_uv);
 
     //float bins = 256. * pow(2, -8. * iIntensity);
     float bins = min(256., 1. / iIntensity);

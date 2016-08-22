@@ -18,7 +18,6 @@ void deck::init(GLuint _ta, int _l)
 
     tex_input = make_texture( config.pattern.master_width, config.pattern.master_height);
     glGenFramebuffers(1, &fb_input);
-    glBindFramebuffer(GL_FRAMEBUFFER,fb_input);
 //    glNamedFramebufferTexture(fb_input, GL_COLOR_ATTACHMENT0, tex_input, 0);
     glClearTexImage(tex_input, 0, GL_RGBA,GL_FLOAT,nullptr);
     CHECK_GL();
@@ -57,7 +56,7 @@ int deck::load_pattern(int slot, const char * prefix)
         }
     }
     try {
-        auto p = std::make_unique<pattern>(prefix, tex_array, layer + (slot*4));
+        auto p = std::make_unique<pattern>(prefix, tex_array, layer + (slot*4), slot + (layer/4));
         p->intensity = intensity;
         patterns[slot].swap(p);
     }catch(const std::exception &e) {
@@ -114,9 +113,13 @@ int deck::load_set(const char * name)
 
 void deck::render() {
     tex_output = tex_input;
-    out_layer  = in_layer;
+    out_layer  = 64;//in_layer;
+//    glClearTexSubImage(tex_array, 0, 0, 0, out_layer, config.pattern.master_width,config.pattern.master_height,1,GL_RGBA,GL_FLOAT,nullptr);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_input);
     glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex_array,0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
+
     glDisable(GL_BLEND);
     glViewport(0,0,config.pattern.master_width,config.pattern.master_height);
     for(auto &pat : patterns) {
@@ -125,4 +128,23 @@ void deck::render() {
             out_layer = pat->out_layer;
         }
     }
+    next_slot = 0;
+}
+void deck::render_one() {
+    if(!next_slot) {
+        tex_output = tex_input;
+        out_layer  = 64;//in_layer;
+        glClearTexSubImage(tex_array, 0, 0, 0, out_layer, config.pattern.master_width,config.pattern.master_height,1,GL_RGBA,GL_FLOAT,nullptr);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_input);
+        glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex_array,0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
+        glDisable(GL_BLEND);
+        glViewport(0,0,config.pattern.master_width,config.pattern.master_height);
+    }
+    if(auto &pat = patterns[next_slot]) {
+        pat->render(tex_output,out_layer);
+        out_layer = pat->out_layer;
+    }
+    next_slot = (next_slot+1) % 4;
 }

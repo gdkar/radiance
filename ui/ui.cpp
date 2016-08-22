@@ -30,6 +30,7 @@ static GLuint strip_vbo      = 0;
 static int    strip_vbo_size = 0;
 static GLuint vao;
 static GLuint vbo;
+static GLuint ssbo_layers;
 // Window
 static int ww; // Window width
 static int wh; // Window height
@@ -50,18 +51,39 @@ static int selected = 0;
 static enum {STRIPS_NONE, STRIPS_SOLID, STRIPS_COLORED} strip_indicator = STRIPS_NONE;
 
 struct render_class {
+    union generic {
+        float f;
+        int   i;
+        constexpr generic(int x) noexcept :i(x){}
+        constexpr generic(float x) noexcept :f(x){}
+        constexpr generic(const generic &) = default;
+        constexpr generic(generic &&) noexcept = default;
+        generic&operator=(const generic &) = default;
+        generic&operator=(generic &&) noexcept = default;
+        generic&operator=(int _i) noexcept { i = _i;return *this;}
+        generic&operator=(float _i) noexcept { f = _i; return *this;}
+        constexpr operator float() const { return f;}
+        constexpr operator int() const { return i;}
+    };
     struct reservation {
+        reservation() = default;
         reservation(render_class *cls)
         : clsp(cls)
         {}
-        void update(float x, float y, float w, float h)
+        void update(float x, float y, float w, float h, int pid = 0)
         {
-            if(data.size() < 4 ||
-              x!=data[0] || y != data[1] || w != data[2] || h != data[3]) {
-                off = -1;
-                data=std::vector<GLfloat>{x,y,w,h};
-                dirty = true;
-                clsp->vbo_dirty = true;
+            if(data.size() >= 5 ) {
+                if(x!=data[0].f || y != data[1].f || w != data[2].f || h != data[3].f || data[4].i != pid) {
+                    off = -1;
+                    data=std::vector<generic>{x,y,w,h,pid,0,0,0};
+                    dirty = true;
+                    clsp->vbo_dirty = true;
+                }
+            }else{
+                    off = -1;
+                    data=std::vector<generic>{x,y,w,h,pid,0,0,0};
+                    dirty = true;
+                    clsp->vbo_dirty = true;
             }
         }
         void draw()
@@ -72,7 +94,7 @@ struct render_class {
         }
         render_class *clsp;
         off_t off{};
-        std::vector<GLfloat> data{};
+        std::vector<generic> data{};
         bool dirty{false};
     };
     std::list<reservation> reservations{};
@@ -91,31 +113,35 @@ struct render_class {
         }
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBindVertexArray(vao);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(generic), (void*)0);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(generic), (void*)(2*sizeof(generic)));
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 8 * sizeof(generic), (void*)(4*sizeof(generic)));
+        glEnableVertexAttribArray(2);
+
         CHECK_GL();
         return true;
     }
-    reservation *reserve(float x, float y, float w, float h)
+    reservation *reserve(float x, float y, float w, float h, int pid = 0)
     {
         reservations.emplace_back(this);
         auto &res = reservations.back();
-        res.update(x,y,w,h);
+        res.update(x,y,w,h,pid);
         return &res;
     }
     void prepare()
     {
         if(vbo_dirty) {
+            data.clear();
             vbo_dirty = false;
             for(auto & res : reservations) {
-                if(res.dirty){
-                    res.off = data.size() / 4;
+//                if(res.dirty){
+                    res.off = data.size() / 8;
                     std::copy(res.data.begin(),res.data.end(),std::back_inserter(data));
                     res.dirty = false;
                     vbo_dirty = true;
-                }
+//                }
             }
             if(vbo_dirty){
                 glBindBuffer(GL_ARRAY_BUFFER,vbo);
@@ -277,15 +303,15 @@ void ui_init() {
         CHECK_GL();
     }
     rclass.create();
-
+    for(auto i = 0; i < 16; ++i) {
+        pattern_res.push_back(rclass.reserve(float(map_x[i]),float(map_y[i]),config.ui.pattern_width,config.ui.pattern_height,i));
+    }
     crossfader_res = rclass.reserve(config.ui.crossfader_x,config.ui.crossfader_y,config.ui.crossfader_width,config.ui.crossfader_height);
     spectrum_res = rclass.reserve(config.ui.spectrum_x,config.ui.spectrum_y,config.ui.spectrum_width,config.ui.spectrum_height);
     waveform_res = rclass.reserve(config.ui.waveform_x,config.ui.waveform_y,config.ui.waveform_width,config.ui.waveform_height);
     strips_res = rclass.reserve(0,0,config.pattern.master_width,config.pattern.master_height);
     main_res = rclass.reserve(0,0,config.ui.window_width,config.ui.window_height);
-    for(auto i = 0; i < 16; ++i) {
-        pattern_res.push_back(rclass.reserve(map_x[i],map_y[i],config.ui.pattern_width,config.ui.pattern_height));
-    }
+
     rclass.prepare();
     glGenBuffers(1,&vbo);
     glGenVertexArrays(1,&vao);
@@ -310,7 +336,7 @@ void ui_init() {
     // Init select texture
     select_tex = make_texture(ww,wh);
 
-    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, 128);
+    tex_array = make_texture(GL_RGBA32F, config.pattern.master_width, config.pattern.master_height, 65);
 
     glBindFramebuffer(GL_FRAMEBUFFER, select_fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, select_tex, 0);
@@ -319,6 +345,9 @@ void ui_init() {
 
     glGenBuffers(1,&buf_spectrum_data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_spectrum_data);
+    glGenBuffers(1,&ssbo_layers);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER,ssbo_layers);
+    glBufferData(GL_SHADER_STORAGE_BUFFER,64*sizeof(int), NULL, GL_DYNAMIC_DRAW);
     glGenBuffers(1,&buf_waveform_data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER,buf_waveform_data);
     glGenBuffers(1,&buf_waveform_beats_data);
@@ -761,16 +790,27 @@ static void ui_render(bool select) {
     {
         GLuint texs[] = { tex_array };
         glBindTextures(0, 1, texs);
-    }
-    {
-        for(int i = 0; i < config.ui.n_patterns; i++) {
+        struct item{int layer;float intensity;};
+        std::vector<item> items(16);
+        for(auto i = 0; i < config.ui.n_patterns;++i){
             auto &p = deck[map_deck[i]].patterns[map_pattern[i]];
-            glVertexAttribI1i(3, i);
-            glVertexAttribI1i(2, p?p->out_layer : 65);
-            glUniform1f(3, p ? p->intensity : 0);
+            if(p) {
+                items[i].layer = p->out_layer;
+                items[i].intensity = p->intensity;
+            }else{
+                items[i].layer = 64;
+            }
+        }
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssbo_layers);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, items.size() * sizeof(items[0]), items.data(),GL_DYNAMIC_DRAW);
+    }
+    rclass.bind();
+    glDrawArrays(GL_POINTS,0,16);
+/*    {
+        for(int i = 0; i < config.ui.n_patterns; i++) {
             pattern_res[i]->draw();
         }
-    }
+    }*/
     if(!select) {
         for(int i = 0; i < config.ui.n_patterns; i++) {
             if(auto &pat = deck[map_deck[i]].patterns[map_pattern[i]]) {

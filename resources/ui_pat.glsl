@@ -1,3 +1,11 @@
+struct PatternItem {
+    int   layer;
+    float intensity;
+};
+layout(std430,binding=4) buffer PatternData{
+    PatternItem items[];
+};
+
 void main(void) {
     vec2 frag = v_uv * v_size;
     float g = v_uv.y * 0.5 + 0.1;
@@ -5,7 +13,7 @@ void main(void) {
 
     vec2 slider_origin = vec2(25., 45.);
     vec2 slider_gain = vec2(100., 0.);
-    vec2 slider_pos = slider_origin + slider_gain * iIntensity;
+    vec2 slider_pos = slider_origin + slider_gain * items[v_layer].intensity;
     vec2 slider_size = vec2(10.);
     vec2 preview_origin = vec2(25., 75.);
     vec2 preview_size = vec2(100., 100.);
@@ -17,11 +25,11 @@ void main(void) {
         float df = max(rounded_rect_df(frag,vec2(30., 50.), vec2(90., 150.), 25.), 0.);
         if(df > RADIUS )
             discard;
-        f_color0.rgb = dataColor(ivec3(1, v_pid,0));
-        f_color0.rgb = mix(f_color0.rgb, dataColor(ivec3(2, int(v_pid), 0)), inBox(frag.xy, slider_pos - slider_size, slider_pos + slider_size));
+        f_color0.rgb = dataColor(ivec3(1, v_layer,0));
+        f_color0.rgb = mix(f_color0.rgb, dataColor(ivec3(2, int(v_layer), 0)), inBox(frag.xy, slider_pos - slider_size, slider_pos + slider_size));
     } else {
 
-        f_color0 = fancy_rect(frag,vec2(30.,50.), vec2(90,150), iSelected == v_pid + 1);
+        f_color0 = fancy_rect(frag,vec2(30.,50.), vec2(90,150), iSelected == v_layer+ 1);
         float df = max(rounded_rect_df(frag,vec2(30., 50.), vec2(90., 150.), 25.), 0.);
 
         f_color0 =  composite(f_color0,vec4(0.3, 0.3, 0.3, smoothstep(0., 1., df) - smoothstep(2., 5., df)));
@@ -36,7 +44,7 @@ void main(void) {
         f_color0 = composite(f_color0, vec4(grid, inBox(frag.xy, preview_origin, preview_origin + preview_size)));
         vec2 p_uv = (frag - preview_origin) / preview_size;
 //        vec4 p = texture(iTexture, p_uv);
-        vec4 p = texture(iArray, vec3(p_uv,v_layer));
+        vec4 p = texture(iArray, vec3(p_uv,items[v_layer].layer));
         p.a *= inBox(frag, preview_origin, preview_origin + preview_size);
         f_color0 = composite(f_color0, p);
     }

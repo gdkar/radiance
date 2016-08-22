@@ -1,7 +1,7 @@
 // Cycle the color (in HSV) over time
 
 void main(void) {
-    f_color0 = texture(iFrame, v_uv);
+    f_color0 = textureFrame( v_uv);
 
     float deviation;
     deviation = mod(iIntensityIntegral, 1.);

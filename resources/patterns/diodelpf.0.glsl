@@ -2,8 +2,8 @@
 
 void main(void) {
 
-    vec4 prev = texture2D(iChannel[0], v_uv);
-    vec4 next = texture2D(iFrame, v_uv);
+    vec4 prev = textureChannel(0,v_uv);
+    vec4 next = textureFrame(v_uv);
     f_color0.rgb = next.rgb;
     if (next.a > prev.a) {
         f_color0 = next;
@@ -12,5 +12,4 @@ void main(void) {
         f_color0 = composite(next, prev);
     }
     f_color0.a = clamp(f_color0.a, 0, 1);
-    
 }

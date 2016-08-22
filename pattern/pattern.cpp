@@ -14,9 +14,10 @@
 
 
 static GLuint vao = 0;
-pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
+pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer, int pid)
 : tex_array(tex_array)
 , tex_layer(tex_layer)
+, pid(pid)
 {
     bool new_buffers = false;
     if(!vao) {
@@ -69,6 +70,7 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
             success = false;
         } else {
             glProgramUniform1f(h,5, config.ui.fps);
+            glProgramUniform1i(h,11,pid);
             glProgramUniform2f(h, 0,  config.pattern.master_width, config.pattern.master_height);
             GLint tex_assignments[3] = { 1, 2, 3};
             glProgramUniform1iv(h, 7, 3, tex_assignments);
@@ -83,7 +85,6 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
     CHECK_GL();
 
     // Render targets
-    glGenFramebuffers(1, &fb);
     CHECK_GL();
     glGenTextures(tex.size(), &tex[0]);
     CHECK_GL();
@@ -97,10 +98,6 @@ pattern::pattern(const std::string&prefix, GLuint tex_array, int tex_layer)
         CHECK_GL();
     }
     CHECK_GL();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-    CHECK_GL();
-
 }
 
 pattern::~pattern()
@@ -111,9 +108,7 @@ pattern::~pattern()
     shader.clear();
     glDeleteTextures(tex.size(), &tex[0]);
     tex.clear();
-    glDeleteFramebuffers(1, &fb);
     CHECK_GL();
-    fb = 0;
 }
 
 void pattern::render(GLuint input_tex, int input_layer)
@@ -122,8 +117,8 @@ void pattern::render(GLuint input_tex, int input_layer)
     glBindVertexArray(vao);
 
     intensity_integral = std::fmod(intensity_integral + intensity / config.ui.fps, MAX_INTEGRAL);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
 //    glBindTextures(1,tex.size() - 1, tex.data());
 //    glBindTextures(0, 1, &input_tex);
     CHECK_GL();

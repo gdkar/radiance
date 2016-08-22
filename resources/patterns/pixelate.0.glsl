@@ -8,5 +8,5 @@ void main(void) {
     uv = round(uv * bins) / bins;
     uv += 0.5;
 
-    f_color0 = texture2D(iFrame, uv);
+    f_color0 = textureFrame( uv);
 }

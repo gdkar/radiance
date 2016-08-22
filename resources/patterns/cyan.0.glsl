@@ -1,7 +1,7 @@
 // Cyan diagonal stripes
 
 void main(void) {
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = texture(iArray,vec3(v_uv,iFrameLayer));
 
     float t = v_uv.x * 3.0 + v_uv.y * 3.0;
     float y = smoothstep(0.2, 0.7, abs(mod(t - 3. * iIntensityIntegral, 2.) - 1.));

@@ -6,5 +6,5 @@ void main(void) {
     float c = cos(r * M_PI);
     mat2 rot = mat2(c, -s, s, c);
 
-    f_color0 = texture(iFrame, (v_uv - 0.5) * rot + 0.5);
+    f_color0 = textureFrame( (v_uv - 0.5) * rot + 0.5);
 }

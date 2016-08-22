@@ -1,7 +1,7 @@
 // Pink polka dots
 
 void main(void) {
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = textureFrame( v_uv);
     vec4 c;
 
     float r = 0.2;

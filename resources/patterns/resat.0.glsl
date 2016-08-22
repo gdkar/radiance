@@ -7,7 +7,7 @@ void main(void) {
     n += (noise(2. * noise_input) - 0.5) * 0.5;
     n += (noise(4. * noise_input) - 0.5) * 0.25;
 
-    vec4 samp = texture2D(iFrame, v_uv);
+    vec4 samp = textureFrame(v_uv);
     vec3 hsl = rgb2hsv(samp.rgb);
     hsl.g = 1.0 - (1.0 - hsl.g) * (1.0 - factor);
     hsl.r = mix(hsl.r, n, iIntensity);

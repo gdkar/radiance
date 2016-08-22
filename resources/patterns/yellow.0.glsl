@@ -1,7 +1,7 @@
 // Yellow and green vertical waves
 
 void main(void) {
-    f_color0 = texture2D(iFrame, v_uv);
+    f_color0 = textureFrame( v_uv);
 
     float y = smoothstep(0.2, 0.7, abs(mod(v_uv.x * 4. - iIntensityIntegral, 2.) - 1.));
     float g = smoothstep(0.5, 0.9, abs(mod(1. + v_uv.x * 4. - iIntensityIntegral, 2.) - 1.));

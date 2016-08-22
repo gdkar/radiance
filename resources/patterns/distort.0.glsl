@@ -7,5 +7,5 @@ void main(void) {
     shift += (vec2(noise(4. * noise_input), noise(4. * noise_input + 100.)) - 0.5) * 0.25;
     shift = shift / 3.;
 
-    f_color0 = texture(iFrame, v_uv + shift * iIntensity * (15. * iAudioLevel) * sawtooth(iTime, 0.1));
+    f_color0 = textureFrame( v_uv + shift * iIntensity * (15. * iAudioLevel) * sawtooth(iTime, 0.1));
 }

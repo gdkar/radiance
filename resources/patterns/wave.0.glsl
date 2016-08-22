@@ -8,5 +8,5 @@ void main(void) {
     c.b = sin((v_uv.x - v_uv.y) * ratio) / 2 + 0.5;
     c.a = iIntensity;
 
-    f_color0 = composite(texture2D(iFrame, v_uv), c);
+    f_color0 = composite(textureFrame( v_uv), c);
 }

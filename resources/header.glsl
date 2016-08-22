@@ -2,10 +2,10 @@
 #extension GL_ARB_explicit_attrib_location: enable
 #extension GL_ARB_explicit_uniform_location: enable
 
-flat in vec2 v_corner;
+flat in vec2  v_corner;
 flat in  vec2 v_size;
-in      vec2 v_uv;
-flat in int  v_layer;
+in      vec2  v_uv;
+flat in int   v_layer;
 layout(location = 0) out vec4 f_color0;
 
 // Time, measured in beats. Wraps around to 0 every 16 beats, [0.0, 16.0)
@@ -33,7 +33,7 @@ layout(location = 5) uniform float iFPS;
 layout(location = 6) uniform int iFrameLayer;
 // Previous outputs of the other channels (e.g. foo.1.glsl) 
 //layout(location = 7) uniform sampler2D iChannel[3];
-layout(location = 7) uniform int iChannelLayers[3];
+layout(location = 7)  uniform int iChannelLayers[3];
 layout(location = 10) uniform sampler2DArray iArray;
 layout(location = 11) uniform int  iPatternIndex;
 #define M_PI 3.1415926535897932384626433832795
@@ -55,6 +55,10 @@ float rand(vec3 c);
 float noise(float p);
 float noise(vec2 p);
 float noise(vec3 p);
+#define textureFrameOffset(uv, off) \
+    textureOffset(iArray, vec3(uv,iFrameLayer), off)
 
+vec4 textureFrame(vec2);
+vec4 textureChannel(int,vec2);
 #define RADIUS (25.)
 #line 0

@@ -1,4 +1,13 @@
 #version 330
+#extension GL_ARB_explicit_attrib_location: enable
+#extension GL_ARB_explicit_uniform_location: enable
+
+//layout(location = 6) uniform sampler2D iFrame;
+layout(location = 6) uniform int iFrameLayer;
+// Previous outputs of the other channels (e.g. foo.1.glsl) 
+//layout(location = 7) uniform sampler2D iChannel[3];
+layout(location = 7) uniform int iChannelLayers[3];
+layout(location = 10) uniform sampler2DArray iArray;
 const float RADIUS = 25.;
 // Utilities to convert from an RGB vec3 to an HSV vec3
 vec3 rgb2hsv(vec3 c) {
@@ -87,5 +96,13 @@ float noise(vec3 p) {
     float x4 = mix(g, h, xyz.x);
     float y2 = mix(x3, x4, xyz.y);
     return mix(y1, y2, xyz.z);
+}
+vec4 textureFrame(vec2 uv)
+{
+    return texture(iArray, vec3(uv, iFrameLayer));
+}
+vec4 textureChannel(int i,vec2 uv)
+{
+    return texture(iArray,vec3(uv,iChannelLayers[i]));
 }
 

@@ -13,5 +13,5 @@ void main(void) {
     c.a = 1.0 - c.a;
     c.a *= iIntensity;
 
-    f_color0 = composite(texture(iFrame, v_uv), c);
+    f_color0 = composite(texture(iArray,vec3(v_uv,iFrameLayer)),c);
 }
