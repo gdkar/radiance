@@ -33,9 +33,9 @@ void render_init(struct render * render, GLint texture)
         );*/
     CHECK_GL();
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    glGenFramebuffers(1, &render->fb);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, render->fb);
-    glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+    glCreateFramebuffers(1, &render->fb);
+    glNamedFramebufferTexture(render->fb, GL_COLOR_ATTACHMENT0, texture, 0);
+//    glBindFramebuffer(GL_READ_FRAMEBUFFER, render->fb);
     CHECK_GL();
 
     render->mutex = SDL_CreateMutex();
@@ -58,35 +58,38 @@ void render_readback(struct render * render)
     if(SDL_TryLockMutex(render->mutex) == 0) {
         auto head = render->fence_head.load();
         auto tail = render->fence_tail.load();
-        if(render->fence[head&3].load() || head - tail == 4) {
-            SDL_UnlockMutex(render->mutex);
-            return;
+        if(!render->fence[head&3].load() && head - tail < 4) {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, render->fb);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, render->pbo);
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
+            glMemoryBarrier(
+                GL_PIXEL_BUFFER_BARRIER_BIT
+                |GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT
+            );
+            glReadPixels(
+                0
+              , 0
+              , config.pattern.master_width
+              , config.pattern.master_height
+              , GL_RGBA
+              , GL_FLOAT
+              , (void*)((head &3)* render->pixel_count * BYTES_PER_PIXEL ));//(GLvoid*)render->pixels);
+            render->fence[head&3] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+            render->fence_head++;
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+            CHECK_GL();
+            render->sem.post();
         }
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, render->fb);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, render->pbo);
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-        glMemoryBarrier(
-            GL_PIXEL_BUFFER_BARRIER_BIT
-            |GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT
-        );
-        glReadPixels(0, 0, config.pattern.master_width, config.pattern.master_height, GL_RGBA, GL_FLOAT, (void*)((head &3)* render->pixel_count * BYTES_PER_PIXEL ));//(GLvoid*)render->pixels);
-        render->fence[head&3] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        render->fence_head++;
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        CHECK_GL();
         SDL_UnlockMutex(render->mutex);
-        render->sem.post();
     }else{
         WARN("failed to initiate render readback: output thread is lagging.");
     }
 
 }
-
 bool render_freeze(struct render * render) {
     SDL_LockMutex(render->mutex);
     return true;
 }
-
 void render_thaw(struct render * render)
 {
     SDL_UnlockMutex(render->mutex);

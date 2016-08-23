@@ -51,20 +51,6 @@ static int selected = 0;
 static enum {STRIPS_NONE, STRIPS_SOLID, STRIPS_COLORED} strip_indicator = STRIPS_NONE;
 
 struct render_class {
-    union generic {
-        float f;
-        int   i;
-        constexpr generic(int x) noexcept :i(x){}
-        constexpr generic(float x) noexcept :f(x){}
-        constexpr generic(const generic &) = default;
-        constexpr generic(generic &&) noexcept = default;
-        generic&operator=(const generic &) = default;
-        generic&operator=(generic &&) noexcept = default;
-        generic&operator=(int _i) noexcept { i = _i;return *this;}
-        generic&operator=(float _i) noexcept { f = _i; return *this;}
-        constexpr operator float() const { return f;}
-        constexpr operator int() const { return i;}
-    };
     struct reservation {
         reservation() = default;
         reservation(render_class *cls)

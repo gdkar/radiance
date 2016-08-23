@@ -56,6 +56,22 @@ _Pragma("once")
 #include <list>
 #include <deque>
 #include <unordered_map>
+
+    union generic {
+        float f;
+        int   i;
+        constexpr generic(int x) noexcept :i(x){}
+        constexpr generic(float x) noexcept :f(x){}
+        constexpr generic(const generic &) = default;
+        constexpr generic(generic &&) noexcept = default;
+        generic&operator=(const generic &) = default;
+        generic&operator=(generic &&) noexcept = default;
+        generic&operator=(int _i) noexcept { i = _i;return *this;}
+        generic&operator=(float _i) noexcept { f = _i; return *this;}
+        constexpr operator float() const { return f;}
+        constexpr operator int() const { return i;}
+    };
+
 #else
 #include <stdint.h>
 #include <stddef.h>
