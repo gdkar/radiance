@@ -28,6 +28,7 @@ enum midi_event_type {
 
 struct midi_event {
     midi_event_type type;
+    int snap;
     struct midi_slider {
         int index;
         float value;

@@ -192,7 +192,7 @@ static const int map_tab[19] =   {1,  2,  3,  4,  17, 17, 5,  6,  7,  10, 11, 12
 static const int map_stab[19] =  {15, 1,  1,  2,  3,  6,  7,  8,  8,  9,  9,  10, 11, 14, 15, 16, 16, 17, 18};
 static const int map_home[19] =  {1,  1,  1,  1,  1,  1,  1,  1,  1,  9,  9,  9,  9,  9,  9,  9,  9,  1,  9};
 static const int map_end[19] =   {8,  8,  8,  8,  8,  8,  8,  8,  8, 16, 16, 16, 16, 16, 16, 16, 16,  8, 16};
-
+static int snap_states[19] = {0};
 render_class rclass{};
 std::vector<render_class::reservation*> pattern_res{};
 render_class::reservation* crossfader_res{};
@@ -455,7 +455,19 @@ static struct pattern * selected_pattern(int s) {
     return NULL;
 }
 
-static void set_slider_to(int s, float v) {
+static float get_slider(int s) {
+    if(s == crossfader_selection_top || s == crossfader_selection_bot)
+        return crossfader.position;
+    if(auto p = selected_pattern(s))
+        return p->intensity;
+    return 0;
+}
+
+static void set_slider_to(int s, float v, int snap = 0) {
+    if(snap && snap_states[s] != snap){
+        if(std::abs(get_slider(s) - v) > params.ui.snap_threshold)
+            return;
+    }
     if(s == crossfader_selection_top || s == crossfader_selection_bot) {
         crossfader.position = v;
     } else {
@@ -463,15 +475,11 @@ static void set_slider_to(int s, float v) {
             p->intensity = v;
         }
     }
+    snap_states[s] = snap;
 }
 
 static void increment_slider(int s, float v) {
-    if(s == crossfader_selection_top || s == crossfader_selection_bot) {
-        crossfader.position = CLAMP(crossfader.position + v, 0., 1.);
-    } else {
-        if(auto && p = selected_pattern(s))
-            p->intensity = CLAMP(p->intensity + v, 0., 1.);
-    }
+    set_slider_to(s, v + get_slider(s), 0);
 }
 
 static void handle_key(SDL_KeyboardEvent * e) {
@@ -482,25 +490,43 @@ static void handle_key(SDL_KeyboardEvent * e) {
 
     if(pat_entry) {
         switch(e->keysym.sym) {
-            case SDLK_RETURN:
-                for(int i=0; i<config.ui.n_patterns; i++) {
-                    if(map_selection[i] == selected) {
-                        gl_font.clear();
-                        gl_font.set_dirty();
-                        if(pat_entry_text[0] == ':') {
-                            if (deck[map_deck[i]].load_set(pat_entry_text+1) == 0) {
-                                // TODO: Load in the correct pattern names
-                            }
-                        } else if(deck[map_deck[i]].load_pattern( map_pattern[i], pat_entry_text) == 0) {
-                            if(pat_entry_text[0] != '\0') {
-                            }
+            case SDLK_RETURN:{
+                auto entry = std::string{pat_entry_text};
+                auto seppos = entry.find(' ');
+                auto pref = entry.substr(0,seppos);
+                auto suff = entry.substr(seppos + 1);
+                if(pref == "w" || pref == "wa") {
+                    for(int i=0; i<config.ui.n_patterns; i++) {
+                        if(map_selection[i] == selected) {
+                            deck[map_deck[i]].save(suff.c_str());
+                            break;
                         }
-                        break;
+                    }
+                }else if(pref == "e" || pref == "edit" || pref == ":") {
+                    for(int i=0; i<config.ui.n_patterns; i++) {
+                        if(map_selection[i] == selected) {
+                            gl_font.clear();
+                            gl_font.set_dirty();
+                            if (deck[map_deck[i]].load_set(suff.c_str()) == 0) {
+                                for(int j = 0; j < config.ui.n_patterns; ++j) {
+                                    if(map_deck[j] == map_deck[selected]) {
+                                        snap_states[j] = 0.f;
+                                    }
+                                }
+                                // TODO: Load in the correct pattern names
+                            } else if(deck[map_deck[i]].load_pattern( map_pattern[i], suff.c_str(),-1) == 0) {
+                                if(pat_entry_text[0] != '\0') {
+                                }
+                                snap_states[selected] = 0;
+                            }
+                            break;
+                        }
                     }
                 }
                 pat_entry = false;
                 SDL_StopTextInput();
                 break;
+            }
             case SDLK_ESCAPE:
                 pat_entry = false;
                 SDL_StopTextInput();
@@ -640,6 +666,7 @@ static void handle_key(SDL_KeyboardEvent * e) {
                 selected = map_end[selected];
                 break;
             case SDLK_r:
+                params_refresh();
                 if (shift) {
                     midi_refresh();
                     output_refresh();
@@ -798,10 +825,12 @@ static void ui_render(bool select) {
         }
     }*/
     if(!select) {
-        for(int i = 0; i < config.ui.n_patterns; i++) {
-            if(auto &pat = deck[map_deck[i]].patterns[map_pattern[i]]) {
-                if(pat->name.size() && gl_font.get_dirty()) {
-                    gl_font.print(map_x[i] + config.ui.pattern_name_x, map_y[i] + config.ui.pattern_height -config.ui.pattern_name_y, pat->name);
+        if(gl_font.get_dirty()){
+            for(int i = 0; i < config.ui.n_patterns; i++) {
+                if(auto &pat = deck[map_deck[i]].patterns[map_pattern[i]]) {
+                    if(pat->name.size()) {
+                        gl_font.print(map_x[i] + config.ui.pattern_name_x, map_y[i] + config.ui.pattern_height -config.ui.pattern_name_y, pat->name);
+                    }
                 }
             }
         }
@@ -918,7 +947,7 @@ void ui_run() {
                     midi_event * me = static_cast<midi_event*>(e.user.data1);
                     switch (me->type) {
                     case MIDI_EVENT_SLIDER: {
-                        set_slider_to(me->slider.index, me->slider.value);
+                        set_slider_to(me->slider.index, me->slider.value,me->snap);
                         break;
                     }
                     case MIDI_EVENT_KEY: {

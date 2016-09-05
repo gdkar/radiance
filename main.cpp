@@ -35,7 +35,9 @@ double audio_level;
 int main(int argc, char* argv[]) {
     config_init(&config);
     config_load(&config, "resources/config.ini");
-    current_loglevel = static_cast<loglevel>(config.debug.loglevel);
+    params_init(&params);
+    params_refresh();
+    current_loglevel = static_cast<loglevel>(params.debug.loglevel);
 
     ui_init();
     for(auto i = 0ul; i < std::extent<decltype(deck)>::value; ++i) {

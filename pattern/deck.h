@@ -11,12 +11,14 @@ struct deck {
     int    in_layer{};
     int    out_layer{};
     int    next_slot{};
+    std::string name{};
     deck();
     virtual ~deck();
     void init(GLuint tex_array, int layer);
     void term();
-    int load_pattern(int slot, const char *prefix);
+    int load_pattern(int slot, const char *prefix, float _intensity);
     int load_set(const char *prefix);
+    int save(const char *name);
     void render();
     void render_one();
     void unload_pattern(int slot);

@@ -40,14 +40,15 @@ deck::~deck()
 {
     term();
 }
-int deck::load_pattern(int slot, const char * prefix)
+int deck::load_pattern(int slot, const char * prefix, float intensity)
 {
     assert(slot >= 0 && slot < config.deck.n_patterns);
-    float intensity = 0;
-
-    if(patterns[slot])
-        intensity = patterns[slot]->intensity;
-
+    if(intensity < 0) {
+        if(patterns[slot])
+            intensity = patterns[slot]->intensity;
+        else
+            intensity = 0;
+    }
     if(prefix[0] == '\0') {
         if(patterns[slot]) {
             prefix = patterns[slot]->name.c_str();
@@ -81,18 +82,28 @@ static int deck_ini_handler(void * user, const char * section, const char * name
 
     INFO("%s %s %s", section, name, value);
     if (data->found) return 1;
-    if (strcmp(section, "decks") != 0) return 1;
-    if (strcmp(name, data->name) != 0) return 1;
+    if (strcmp(section, "decks") ) return 1;
+    if (strcmp(name, data->name) ) return 1;
     data->found = true;
     auto val = std::string{value};
     auto slot = 0;
     while (slot < config.deck.n_patterns) {
-        auto seppos = val.find(' ');
-        if(val.empty() || seppos == 0)
+        if(val.empty())
             break;
-        auto prefix = val.substr(0,seppos);
+        auto seppos = val.find(' ');
+        if(seppos == 0)
+            break;
+        auto entry = val.substr(0,seppos);
         val = val.substr(seppos+1);
-        if(data->deck->load_pattern(slot++, prefix.c_str()) < 0)
+        if(entry[0] == '_' && entry.size() == 1){
+            slot++;
+            continue;
+        }
+        seppos = entry.find(':');
+        auto name = entry.substr(0,seppos);
+        auto intensity = 0.f;
+        std::istringstream{entry.substr(seppos+1)} >> intensity;
+        if(data->deck->load_pattern(slot++, name.c_str(),intensity) < 0)
             return 0;
     }
     return 1;
@@ -105,12 +116,28 @@ int deck::load_set(const char * name)
     deck_ini_data data = {
         .deck = this, .name = name, .found = false
     };
-    auto rc = ini_parse(config.paths.decks_config, deck_ini_handler, &data);
-    if (!data.found)
+    auto rc = ini_parse(params.paths.decks_config, deck_ini_handler, &data);
+    if(rc)
+        return rc;
+    if (!data.found) {
         ERROR("No deck set named '%s'", name);
-    return rc;
+        return -1;
+    }
+    return 0;
 }
-
+int deck::save(const char *name)
+{
+    std::ofstream ofs(params.paths.decks_config,std::ios_base::app);
+    ofs << name << "=";
+    for(auto i = 0; i < config.deck.n_patterns;++i){
+        if(patterns[i])
+            ofs << " " << patterns[i]->name << ":" << patterns[i]->intensity;
+        else
+            ofs << " _";
+    }
+    ofs << std::endl;
+    return 0;
+}
 void deck::render() {
     tex_output = tex_input;
     out_layer  = 64;//in_layer;
