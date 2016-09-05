@@ -1,7 +1,7 @@
 // Only update a vertical slice that slides across
 
 void main(void) {
-    vec4 prev = textureChannel(0,, v_uv);
+    vec4 prev = textureChannel(0, v_uv);
     vec4 next = textureFrame( v_uv);
     float factor = pow(iIntensity, 2.0);
 

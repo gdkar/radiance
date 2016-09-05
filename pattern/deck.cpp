@@ -77,13 +77,17 @@ struct deck_ini_data {
     bool found;
 };
 
-static int deck_ini_handler(void * user, const char * section, const char * name, const char * value) {
+static int deck_ini_handler(void * user, const char * section, const char * name, const char * value)
+{
     struct deck_ini_data * data = static_cast<deck_ini_data*>(user);
 
     INFO("%s %s %s", section, name, value);
     if (data->found) return 1;
     if (strcmp(section, "decks") ) return 1;
     if (strcmp(name, data->name) ) return 1;
+    for(auto i = 0; i < config.deck.n_patterns;++i){
+        data->deck->unload_pattern(i);
+    }
     data->found = true;
     auto val = std::string{value};
     auto slot = 0;
@@ -110,9 +114,6 @@ static int deck_ini_handler(void * user, const char * section, const char * name
 }
 int deck::load_set(const char * name)
 {
-    for (auto slot = 0; slot < config.deck.n_patterns; slot++)
-        unload_pattern(slot);
-
     deck_ini_data data = {
         .deck = this, .name = name, .found = false
     };

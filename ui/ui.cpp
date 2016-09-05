@@ -502,7 +502,9 @@ static void handle_key(SDL_KeyboardEvent * e) {
                             break;
                         }
                     }
-                }else if(pref == "e" || pref == "edit" || pref == ":") {
+                }else if(pref == "e" || pref == "edit" || entry[0] == ':') {
+                    if(entry[0] == ':')
+                        suff = entry.substr(1);
                     for(int i=0; i<config.ui.n_patterns; i++) {
                         if(map_selection[i] == selected) {
                             gl_font.clear();
@@ -515,8 +517,6 @@ static void handle_key(SDL_KeyboardEvent * e) {
                                 }
                                 // TODO: Load in the correct pattern names
                             } else if(deck[map_deck[i]].load_pattern( map_pattern[i], suff.c_str(),-1) == 0) {
-                                if(pat_entry_text[0] != '\0') {
-                                }
                                 snap_states[selected] = 0;
                             }
                             break;
@@ -611,6 +611,34 @@ static void handle_key(SDL_KeyboardEvent * e) {
             case SDLK_0:
                 set_slider_to(selected, 1);
                 break;
+            case SDLK_e: {
+                if(selected >= 1 && selected < 17){
+                    pat_entry = true;
+                    pat_entry_x = map_x[selected-1];
+                    pat_entry_y = map_y[selected-1];
+                    pat_entry_text[0] = 'e';
+                    pat_entry_text[1] = ' ';
+                    pat_entry_text[2] = '\0';
+                    textbox_font.clear();
+                    textbox_font.set_dirty();
+                    SDL_StartTextInput();
+                }
+                break;
+            }
+            case SDLK_w: {
+                if(selected >= 1 && selected < 17){
+                    pat_entry = true;
+                    pat_entry_x = map_x[selected-1];
+                    pat_entry_y = map_y[selected-1];
+                    pat_entry_text[0] = 'w';
+                    pat_entry_text[1] = ' ';
+                    pat_entry_text[2] = '\0';
+                    textbox_font.clear();
+                    textbox_font.set_dirty();
+                    SDL_StartTextInput();
+                }
+                break;
+            }
             case SDLK_SEMICOLON: if(!shift) break; {
                 if(selected >= 1 && selected < 17){
                     pat_entry = true;
