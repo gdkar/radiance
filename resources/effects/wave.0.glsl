@@ -9,5 +9,5 @@ void main(void) {
     c.b = 0.5 * sin((normCoord.x - normCoord.y) * ratio) + 0.5;
     c.a = iIntensity;
 
-    gl_FragColor = composite(texture2D(iFrame, uv), c);
+    fragColor = composite(texture2D(iFrame, uv), c);
 }

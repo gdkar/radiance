@@ -30,10 +30,10 @@ signals:
     void previousChanged(VideoNode *value);
 
 private:
-    std::vector<std::shared_ptr<QOpenGLFramebufferObject> > fbos;
+    std::vector<SharedFboPointer > fbos;
 
-    std::vector<std::vector<std::shared_ptr<QOpenGLFramebufferObject>>> m_intermediateFbos;
-    std::vector<std::unique_ptr<QOpenGLShaderProgram> > m_programs;
+    std::vector<std::vector<SharedFboPointer>> m_intermediateFbos;
+    std::vector<ShaderProgramPointer > m_programs;
     int m_fboIndex;
 
     void initialize();

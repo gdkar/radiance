@@ -12,7 +12,8 @@ class UISettings : public QObject {
     Q_PROPERTY(QSize outputSize READ outputSize WRITE setOutputSize NOTIFY outputSizeChanged)
 
 public:
-    UISettings();
+    UISettings( QObject * = 0);
+   ~UISettings() override;
     QSize previewSize();
     void setPreviewSize(QSize value);
     QSize outputSize();

@@ -26,5 +26,5 @@ void main() {
         col = composite(col, res);
     }
 
-	gl_FragColor = col;
+	fragColor = col;
 }

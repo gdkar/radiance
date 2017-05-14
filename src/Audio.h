@@ -49,7 +49,7 @@ private:
     double audioThreadLow;
     double audioThreadLevel;
     double beatLPF;
-    struct btrack btrack; 
+    struct btrack btrack;
     double *window;
 
     static double hannWindow(int n);

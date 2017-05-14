@@ -24,16 +24,13 @@ public slots:
     void setLeft(VideoNode *value);
     void setRight(VideoNode *value);
 
-    std::shared_ptr<QOpenGLFramebufferObject> & blankFbo(int i);
-    std::shared_ptr<QOpenGLFramebufferObject> const & blankFbo(int i) const;
 signals:
     void parameterChanged(qreal value);
     void leftChanged(VideoNode *value);
     void rightChanged(VideoNode *value);
 
 private:
-    std::shared_ptr<QOpenGLShaderProgram> m_program;
-    std::vector<std::shared_ptr<QOpenGLFramebufferObject> > m_blankFbos;
+    ShaderProgramPointer m_program;
 
     void initialize();
     void paint();

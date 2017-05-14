@@ -7,23 +7,37 @@
 {
     return QString(
     "#version 130\n"
-//    "#extension GL_ARB_shading_language_420pack : enable\n"
-//    "const vec2 varray[4] = { vec2( 1., 1.),vec2(1., -1.),vec2(-1., 1.),vec2(-1., -1.)};\n"
-    "varying vec2 coords;\n"
+    "out vec2 uv;\n"
     "void main() {\n"
-    "    vec2 vertex;\n"
+    "    vec2 _uv;\n"
     "    switch(gl_VertexID) {\n"
-    "    case 0: vertex = vec2(1.,1.);break;\n"
-    "    case 1: vertex = vec2(1.,-1.);break;\n"
-    "    case 2: vertex = vec2(-1.,1.);break;\n"
-    "    case 3: vertex = vec2(-1.,-1.);break;\n"
-    "    default:vertex = vec2(0.,0.);break;\n"
+    "    case 0: _uv = vec2(1.,1.);break;\n"
+    "    case 1: _uv = vec2(1.,-1.);break;\n"
+    "    case 2: _uv = vec2(-1.,1.);break;\n"
+    "    case 3: _uv = vec2(-1.,-1.);break;\n"
+    "    default:_uv = vec2(0.,0.);break;\n"
     "    }\n"
-//    "    vec2 vertex = varray[gl_VertexID];\n"
-    "    gl_Position = vec4(vertex,0.,1.);\n"
-    "    coords = vertex;\n"
+    "    gl_Position = vec4(_uv,0.,1.);\n"
+    "    uv = (_uv + vec2(1.,1.)) * 0.5;\n"
     "}");
 
+}
+/*static*/ QOpenGLShader *RenderContext::defaultVertexShader()
+{
+    static QOpenGLShader vert(QOpenGLShader::Vertex);
+//c    if(!vert.isCompiled())
+    vert.compileSourceCode(defaultVertexShaderSource());
+    if(!vert.isCompiled()) {
+        qDebug() << vert.log();
+    }
+    return &vert;
+}
+/*static*/ QOpenGLShaderProgram  *RenderContext::defaultVertexHalf()
+{
+    auto res = std::make_unique<QOpenGLShaderProgram>();
+    res->addShaderFromSourceCode(QOpenGLShader::Vertex,
+    defaultVertexShaderSource());
+    return res.release();
 }
 RenderContext::RenderContext()
     : context(nullptr)
@@ -43,69 +57,84 @@ RenderContext::RenderContext()
 }
 
 RenderContext::~RenderContext() {
-    delete surface;
-    surface = 0;
-    delete context;
-    context = 0;
-    delete m_premultiply;
     m_premultiply = 0;
-//    delete m_blankFbo;
-//    m_blankFbo = 0;
-    foreach(auto t, m_noiseTextures) delete t;
     m_noiseTextures.clear();
+    surface = 0;
+    context->deleteLater();
+    context = 0;
 }
 
 void RenderContext::start() {
     qDebug() << "Calling start from" << QThread::currentThread();
     context = new QOpenGLContext(this);
-    auto scontext = QOpenGLContext::globalShareContext();
-    if(scontext) {
-        context->setFormat(scontext->format());
-        context->setShareContext(scontext);
+    {
+        auto fmt = QSurfaceFormat::defaultFormat();
+        if(auto scontext = QOpenGLContext::globalShareContext()) {
+            fmt = scontext->format();
+            context->setShareContext(scontext);
+        }
+//        fmt.setVersion(4,5);
+        fmt.setVersion(3,0);
+        fmt.setAlphaBufferSize(8);
+        fmt.setRedBufferSize(8);
+        fmt.setGreenBufferSize(8);
+        fmt.setBlueBufferSize(8);
+        fmt.setStencilBufferSize(8);
+        fmt.setDepthBufferSize(24);
+        context->setFormat(fmt);
+        if(!context->create()) {
+            throw std::runtime_error("FUUUUUUUUUCK");
+        }
+        qDebug() << "Desired format\n\n" << fmt << "\n\n";
+        qDebug() << "Actual  format\n\n" << context->format()<< "\n\n";
     }
-
-    context->create();
 
     // Creating a QOffscreenSurface with no window
     // may fail on some platforms
     // (e.g. wayland)
-    surface = new QOffscreenSurface();
-    surface->setFormat(context->format());
-    surface->create();
-
+    {
+        auto tmp_surface = QSharedPointer<QOffscreenSurface>(
+            new QOffscreenSurface(),
+               &QOffscreenSurface::deleteLater
+                );
+        tmp_surface->setFormat(context->format());
+        tmp_surface->create();
+        surface = tmp_surface;
+    }
     elapsed_timer.start();
 }
 
 void RenderContext::checkLoadShaders() {
-    if(m_premultiply != nullptr) return;
-
     auto program = m_premultiply;
-    program = new QOpenGLShaderProgram(this);
-    program->addShaderFromSourceCode(QOpenGLShader::Vertex,
-                                     defaultVertexShaderSource());
+    if(program)
+        return;
+
+    program.reset(defaultVertexHalf());
     program->addShaderFromSourceCode(QOpenGLShader::Fragment,
-                                       "varying vec2 coords;"
-                                       "uniform sampler2D iFrame;"
-                                       "void main() {"
-                                       "    vec4 l = texture2D(iFrame, 0.5 * (coords + 1.));"
-                                       "    gl_FragColor = vec4(l.rgb * l.a, l.a);"
-                                       "}");
-    program->link();
-    m_premultiply = program;
+                                       "#version 130\n"
+                                       "in vec2 uv;\n"
+                                       "uniform sampler2D iFrame;\n"
+                                       "out vec4 fragColor;\n"
+                                       "void main() {\n"
+                                        "    vec4 l = texture2D(iFrame, uv);\n"
+                                       "    fragColor = vec4(l.rgb * l.a, l.a);\n"
+                                       "}\n");
+    if(!program->link())
+        throw std::runtime_error("FUUUUUUUUUCK");
+    m_premultiply.swap(program);
 }
 
-QOpenGLTexture *RenderContext::noiseTexture(int i) {
+SharedTexPointer RenderContext::noiseTexture(int i) const {
     return m_noiseTextures.at(i);
 }
-
-std::shared_ptr<QOpenGLFramebufferObject> &RenderContext::blankFbo() {
+SharedFboPointer RenderContext::blankFbo() const {
     return m_blankFbo;
 }
 
+
 void RenderContext::update() {
-    if(m_rendering.tryAcquire()) {
+    if(m_rendering.tryAcquire())
         emit renderRequested();
-    }
 }
 
 void RenderContext::checkCreateNoise() {
@@ -116,8 +145,7 @@ void RenderContext::checkCreateNoise() {
            tex->height() == fboSize(i).height()) {
             continue;
         }
-        delete tex;
-        tex = new QOpenGLTexture(QOpenGLTexture::Target2D);
+        tex = SharedTexPointer::create(QOpenGLTexture::Target2D);
         tex->setSize(fboSize(i).width(), fboSize(i).height());
         tex->setFormat(QOpenGLTexture::RGBA8_UNorm);
         tex->allocateStorage(QOpenGLTexture::RGBA, QOpenGLTexture::UInt8);
@@ -135,15 +163,17 @@ void RenderContext::checkCreateNoise() {
 
 void RenderContext::checkCreateBlankFbo()
 {
-    if(!m_blankFbo) {
-        m_blankFbo = std::make_shared<QOpenGLFramebufferObject>(QSize(1,1));
-        glBindTexture(GL_TEXTURE_2D, m_blankFbo->texture());
+    auto blank = m_blankFbo;
+    if(!blank) {
+        blank = SharedFboPointer::create(QSize(1,1));
+        auto tex = blank->texture();
+        glBindTexture(GL_TEXTURE_2D,tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D,0);
+        m_blankFbo.swap(blank);
     }
 }
 
@@ -169,12 +199,12 @@ void RenderContext::render() {
     emit fpsChanged(fps());
 }
 
-qreal RenderContext::fps() {
+qreal RenderContext::fps() const {
     return 1000000000/m_framePeriodLPF;
 }
 
 void RenderContext::makeCurrent() {
-    context->makeCurrent(surface);
+    context->makeCurrent(surface.data());
 }
 
 void RenderContext::flush() {
@@ -258,23 +288,23 @@ QList<VideoNode*> RenderContext::topoSort()
     return sortedNodes;
 }
 
-int RenderContext::outputCount() {
+int RenderContext::outputCount() const {
     return m_outputCount;
 }
 
 
-int RenderContext::previewFboIndex() {
-    return 0;
+int RenderContext::fboIndex(FboRole role) const {
+    switch(role) {
+        case PreviewFboRole: return 0;
+        case OutputFboRole : return 1;
+        default: return -1;
+    }
 }
-
-int RenderContext::outputFboIndex() {
-    return 1;
-}
-
-QSize RenderContext::fboSize(int i) {
-    if(i == previewFboIndex())
+QSize RenderContext::fboSize(int i) const
+{
+    if(i == fboIndex(PreviewFboRole))
         return uiSettings->previewSize();
-    if(i == outputFboIndex())
+    if(i == fboIndex(OutputFboRole))
         return uiSettings->outputSize();
     return QSize(0, 0);
 }

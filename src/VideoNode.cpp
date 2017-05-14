@@ -29,29 +29,29 @@ QOpenGLFramebufferObject *VideoNode::renderFbo(int idx) const
 {
     return m_renderFbos.at(idx).get();
 }*/
-std::shared_ptr<QOpenGLFramebufferObject> &VideoNode::outputFbo(int idx)
+SharedFboPointer &VideoNode::outputFbo(int idx)
 {
     return m_fbos[idx];
 }
-std::shared_ptr<QOpenGLFramebufferObject> &VideoNode::displayFbo(int idx)
+SharedFboPointer &VideoNode::displayFbo(int idx)
 {
     return m_displayFbos[idx];
 }
-std::shared_ptr<QOpenGLFramebufferObject> &VideoNode::renderFbo(int idx)
+SharedFboPointer &VideoNode::renderFbo(int idx)
 {
     return m_renderFbos[idx];
 }
-std::shared_ptr<QOpenGLFramebufferObject> VideoNode::outputFbo(int idx) const
+SharedFboPointer VideoNode::outputFbo(int idx) const
 {
-    return m_fbos[idx];
+    return m_fbos.at(idx);
 }
-std::shared_ptr<QOpenGLFramebufferObject> VideoNode::displayFbo(int idx) const
+SharedFboPointer VideoNode::displayFbo(int idx) const
 {
-    return m_displayFbos[idx];
+    return m_displayFbos.at(idx);
 }
-std::shared_ptr<QOpenGLFramebufferObject> VideoNode::renderFbo(int idx) const
+SharedFboPointer VideoNode::renderFbo(int idx) const
 {
-    return m_renderFbos[idx];
+    return m_renderFbos.at(idx);
 }
 void VideoNode::render() {
     if(!m_initialized) {
@@ -124,7 +124,7 @@ bool VideoNode::swap(int i) {
     QMutexLocker locker(&m_textureLocks[i]);
     if(m_updated[i].exchange(false)) {
         m_context->flush();
-        std::swap(displayFbo(i),renderFbo(i));
+        displayFbo(i).swap(renderFbo(i));
         //resizeFbo(&m_displayFbos[i], m_renderFbos.at(i)->size());
         //QOpenGLFramebufferObject::blitFramebuffer(m_displayFbos.at(i), m_renderFbos.at(i));
         return true;

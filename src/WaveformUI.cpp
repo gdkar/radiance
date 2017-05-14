@@ -18,19 +18,8 @@ protected:
     void changeProgram(QString fragmentShader)
     {
         try {
-            fragmentShader;
-
-            auto program = std::make_unique<QOpenGLShaderProgram>();
-            if(!program->addShaderFromSourceCode(QOpenGLShader::Vertex,
-                                       "#version 130\n"
-                                       "#extension GL_ARB_shading_language_420pack : enable\n"
-                                       "const vec2 varray[4] = { vec2( 1., 1.),vec2(1., -1.),vec2(-1., 1.),vec2(-1., -1.)};\n"
-                                       "varying vec2 coords;\n"
-                                       "void main() {"
-                                       "    vec2 vertex = varray[gl_VertexID];\n"
-                                       "    gl_Position = vec4(vertex,0.,1.);\n"
-                                       "    coords = vertex;\n"
-                                       "}"))
+            auto program = RenderContext::defaultVertexHalf();
+            if(!program)
                 throw std::runtime_error("bad vertex shader.");
             if(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShader))
                 throw std::runtime_eror("bad fragment shader.");
@@ -51,7 +40,8 @@ protected:
     {
         auto waveformUI = static_cast<WaveformUI *>(item);
         auto fs = waveformUI->fragmentShader();
-        if(fs != m_fragmentShader) changeProgram(fs);
+        if(fs != m_fragmentShader)
+            changeProgram(fs);
     }
     void render() override
     {
@@ -59,6 +49,7 @@ protected:
             audio->renderWaveform();
 
             glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_BLEND);
             m_program->bind();

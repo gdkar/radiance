@@ -1,8 +1,7 @@
 // Fileball in the center
 
 void main(void) {
-    vec2 uv = gl_FragCoord.xy / iResolution;
-    gl_FragColor = texture2D(iFrame, uv);
+    fragColor = texture2D(iFrame, uv);
 
     vec2 normCoord = (uv - 0.5) * aspectCorrection;
 
@@ -14,8 +13,8 @@ void main(void) {
 
     normCoord = normCoord + shift;
     vec4 color = vec4(1., length(normCoord) * 2., 0., smoothstep(0.4, 0.5, (1. - length(normCoord))));
-    
+
     color.a *= smoothstep(0., 0.2, iIntensity);
-    
-    gl_FragColor = composite(gl_FragColor, color);
+
+    fragColor = composite(fragColor, color);
 }

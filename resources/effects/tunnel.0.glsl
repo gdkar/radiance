@@ -26,6 +26,6 @@ void main()
     vec4 c2 = texture2D(iFrame, texcoords2);
     c2.a *= box(texcoords2);
 
-    gl_FragColor = composite(c2, c);
+    fragColor = composite(c2, c);
 }
 

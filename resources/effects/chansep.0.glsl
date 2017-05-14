@@ -15,5 +15,5 @@ void main(void) {
 
     vec3 rgb = vec3(redImage.r * redImage.a, greenImage.g * greenImage.a, blueImage.b * blueImage.a);
     float a_out = 1. - (1. - rgb.r) * (1. - rgb.g) * (1. - rgb.b);
-    gl_FragColor = vec4(rgb / a_out, a_out);
+    fragColor = vec4(rgb / a_out, a_out);
 }

@@ -22,9 +22,8 @@ protected:
     void changeProgram(QString fragmentShader) {
         m_fragmentShader = fragmentShader;
 
-        auto program = new QOpenGLShaderProgram();
-        if(!program->addShaderFromSourceCode(QOpenGLShader::Vertex,
-            RenderContext::defaultVertexShaderSource()))
+        auto program = RenderContext::defaultVertexHalf();
+        if(!program)
             goto err;
         if(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShader))
             goto err;

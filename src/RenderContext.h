@@ -8,19 +8,33 @@
 #include <QEvent>
 #include <QSet>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLShader>
 #include <QOpenGLTexture>
 #include <QSemaphore>
 #include "VideoNode.h"
 #include "semaphore.hpp"
 
+using SharedFboPointer = QSharedPointer<QOpenGLFramebufferObject>;
+using WeakFboPointer   = QWeakPointer  <QOpenGLFramebufferObject>;
+using SharedTexPointer = QSharedPointer<QOpenGLTexture>;
+using WeakTexPointer   = QWeakPointer<QOpenGLTexture>;
+using ShaderProgramPointer = QSharedPointer<QOpenGLShaderProgram>;
+
 class RenderContext : public QObject {
     Q_OBJECT
 
 public:
+    enum FboRole {
+        PreviewFboRole,
+        OutputFboRole,
+    };
+    Q_ENUM(FboRole);
     RenderContext();
    ~RenderContext() override;
     static QString defaultVertexShaderSource();
-    QOffscreenSurface *surface;
+    static QOpenGLShader *defaultVertexShader();
+    static QOpenGLShaderProgram *defaultVertexHalf();
+    QSharedPointer<QOffscreenSurface> surface;
     QOpenGLContext *context;
     QTimer *timer;
     QElapsedTimer elapsed_timer;
@@ -29,15 +43,14 @@ public:
     void makeCurrent();
     void flush();
 
-    QOpenGLShaderProgram *m_premultiply;
+    ShaderProgramPointer m_premultiply;
 
     QSet<VideoNode*> m_videoNodes; // temp
-    int outputCount();
-    int previewFboIndex();
-    int outputFboIndex();
-    QSize fboSize(int i);
-    QOpenGLTexture *noiseTexture(int i);
-    std::shared_ptr<QOpenGLFramebufferObject> &blankFbo();
+    int outputCount()const ;
+    int fboIndex(FboRole role) const;
+    QSize fboSize(int i)const ;
+    SharedTexPointer  noiseTexture(int i) const;
+    SharedFboPointer  blankFbo() const;
 
 public slots:
     void start();
@@ -46,24 +59,24 @@ public slots:
     void removeVideoNode(VideoNode* n);
     void addSyncSource(QObject *source);
     void removeSyncSource(QObject *source);
-    qreal fps();
+    qreal fps() const;
 
 private slots:
     void render();
 
 private:
-    const qreal FPS_ALPHA = 0.03;
+    static constexpr const qreal FPS_ALPHA = 0.03;
     QList<VideoNode*> topoSort();
     void load();
     int m_outputCount;
     QList<QObject *> m_syncSources;
     QObject *m_currentSyncSource;
     radiance::RSemaphore m_rendering;
-    QVector<QOpenGLTexture *> m_noiseTextures;
+    QVector<SharedTexPointer> m_noiseTextures;
     void checkLoadShaders();
     void checkCreateNoise();
     void checkCreateBlankFbo();
-    std::shared_ptr<QOpenGLFramebufferObject> m_blankFbo;
+    SharedFboPointer m_blankFbo;
     qreal m_framePeriodLPF;
 
 signals:

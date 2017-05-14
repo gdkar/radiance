@@ -33,5 +33,5 @@ void main(void) {
     vec4 nc = texture2D(iFrame, newUV);
     nc.a *= box(newUV);
 
-    gl_FragColor = mix(oc, nc, smoothstep(0, 0.2, iIntensity));
+    fragColor = mix(oc, nc, smoothstep(0, 0.2, iIntensity));
 }

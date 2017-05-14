@@ -3,8 +3,13 @@
 #include <QElapsedTimer>
 #include <QMutex>
 #include <QtGlobal>
+#include <QMetaType>
+#include <QMetaEnum>
+#include <QMetaObject>
 
 class Timebase {
+
+    Q_GADGET
 public:
     static constexpr double S_PER_MINUTE = 60;
     static constexpr double MS_PER_MINUTE =  S_PER_MINUTE * 1000;
@@ -17,13 +22,14 @@ public:
         TimeSourceClock,
         //TimeSourceNetwork,
     };
-
+    Q_ENUM(TimeSource);
     enum TimeSourceEvent {
         TimeSourceEventNone,
         TimeSourceEventBeat,
         TimeSourceEventBar,
         TimeSourceEventBPM,
     };
+    Q_ENUM(TimeSourceEvent);
 
     Timebase();
     void update(enum TimeSource source, enum TimeSourceEvent, double eventArg);

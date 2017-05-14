@@ -162,7 +162,8 @@ void LuxDevice::setBus(LuxBus * bus, bool blind) {
 QVector<QColor> LuxDevice::frame() {
     if (m_videoNode == nullptr)
         return QVector<QColor>();
-    return m_videoNode->pixels(m_videoNode->context()->outputFboIndex(), m_pixels); // TODO put this back
+    auto role_index = m_videoNode->context()->fboIndex(RenderContext::OutputFboRole);
+    return m_videoNode->pixels(role_index, m_pixels); // TODO put this back
 }
 void LuxDevice::refresh() {
 }

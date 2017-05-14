@@ -1,11 +1,13 @@
 #include "UISettings.h"
 #include "main.h"
 
-UISettings::UISettings()
-    : m_previewSize(QSize(1, 1))
+UISettings::UISettings(QObject * p)
+
+    : QObject(p)
+    , m_previewSize(QSize(1, 1))
     , m_outputSize(QSize(1, 1)) {
 }
-
+UISettings::~UISettings() = default;
 QSize UISettings::previewSize() {
     return m_previewSize;
 }

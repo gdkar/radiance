@@ -1,4 +1,4 @@
-#version 120
+#version 130
 
 // Time, measured in beats. Wraps around to 0 every 16 beats, [0.0, 16.0)
 uniform highp float iStep;
@@ -181,9 +181,8 @@ float noise(vec4 p) {
     float z2 = mix(y3, y4, xyzw.z);
     return mix(z1, z2, xyzw.w);
 }
-
+in vec2 uv;
 float onePixel = 1. / min(iResolution.x, iResolution.y);
 vec2 aspectCorrection = iResolution / min(iResolution.x, iResolution.y);
-vec2 uv = gl_FragCoord.xy / iResolution;
-
+out vec4 fragColor;
 #line 0

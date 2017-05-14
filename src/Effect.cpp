@@ -20,8 +20,8 @@ Effect::Effect(RenderContext *context)
 }
 
 void Effect::initialize() {
-    for(int i=0; i<m_context->outputCount(); i++) {
-        auto size = m_context->fboSize(i);
+    for(int i=0; i<context()->outputCount(); i++) {
+        auto size = context()->fboSize(i);
         resizeFbo(displayFbo(i), size);
         resizeFbo(renderFbo(i), size);
     }
@@ -46,15 +46,15 @@ void Effect::paint() {
         double audioLevel = 0;
         audio->levels(&audioHi, &audioMid, &audioLow, &audioLevel);
 
-        for(int i=0; i<m_context->outputCount(); i++) {
-            QSize size = m_context->fboSize(i);
+        for(int i=0; i<context()->outputCount(); i++) {
+            QSize size = context()->fboSize(i);
 
             glViewport(0, 0, size.width(), size.height());
-            auto previousFbo = std::shared_ptr<QOpenGLFramebufferObject>{};
+            auto previousFbo = SharedFboPointer{};
 //            QOpenGLFramebufferObject *previousFbo;
             auto prev = previous();
             if(prev == 0) {
-                previousFbo = m_context->blankFbo();
+                previousFbo = context()->blankFbo();
             } else {
                 previousFbo = prev->outputFbo(i);
             }
@@ -84,7 +84,7 @@ void Effect::paint() {
                     glActiveTexture(GL_TEXTURE0);
                     glBindTexture(GL_TEXTURE_2D, previousFbo->texture());
                     glActiveTexture(GL_TEXTURE1);
-                    glBindTexture(GL_TEXTURE_2D, m_context->noiseTexture(i)->textureId());
+                    glBindTexture(GL_TEXTURE_2D, context()->noiseTexture(i)->textureId());
                     for(int k=0; k<m_programs.size(); k++) {
                         glActiveTexture(GL_TEXTURE2 + k);
                         glBindTexture(GL_TEXTURE_2D, m_intermediateFbos.at(i).at((m_fboIndex + k + (j < k)) % (m_programs.size() + 1))->texture());
@@ -122,8 +122,6 @@ void Effect::paint() {
 Effect::~Effect() {
     beforeDestruction();
     m_programs.clear();
-//    foreach(QOpenGLShaderProgram *p, m_programs)
-//        delete p;
     m_fbos.clear();
     m_intermediateFbos.clear();
 }
@@ -148,7 +146,7 @@ bool Effect::loadProgram(QString name) {
     QTextStream headerStream(&header_file);
     auto headerString = headerStream.readAll();
 
-    auto programs = std::vector<std::unique_ptr<QOpenGLShaderProgram> >{};
+    auto programs = std::vector<ShaderProgramPointer>{};
 
     for(int i=0;;i++) {
         auto filename = QString("../resources/effects/%1.%2.glsl").arg(name).arg(i);
@@ -164,18 +162,8 @@ bool Effect::loadProgram(QString name) {
         }
         QTextStream stream(&file);
         auto s = headerString + stream.readAll();
-        programs.emplace_back(std::make_unique<QOpenGLShaderProgram>());
+        programs.emplace_back(RenderContext::defaultVertexHalf());
         auto && program = programs.back();
-        if(!program->addShaderFromSourceCode(QOpenGLShader::Vertex,
-                                       "#version 130\n"
-                                       "#extension GL_ARB_shading_language_420pack : enable\n"
-                                       "const vec2 varray[4] = { vec2( 1., 1.),vec2(1., -1.),vec2(-1., 1.),vec2(-1., -1.)};\n"
-                                       "varying vec2 coords;\n"
-                                       "void main() {"
-                                       "    vec2 vertex = varray[gl_VertexID];\n"
-                                       "    gl_Position = vec4(vertex,0.,1.);\n"
-                                       "    coords = vertex;\n"
-                                       "}")) goto err;
         if(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, s))
             goto err;
         if(!program->link())

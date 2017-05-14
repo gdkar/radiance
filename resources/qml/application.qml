@@ -1,4 +1,4 @@
-import QtQuick 2.3
+import QtQuick 2.8
 import QtQuick.Layouts 1.2
 import QtQuick.Controls 1.4
 import QtGraphicalEffects 1.0
@@ -9,7 +9,7 @@ ApplicationWindow {
     visible: true;
 
     Component.onCompleted: {
-        UISettings.previewSize = "100x100";
+        UISettings.previewSize = "512x512";
         UISettings.outputSize = "1024x768";
     }
 

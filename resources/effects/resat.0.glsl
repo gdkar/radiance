@@ -14,6 +14,6 @@ void main(void) {
     hsl.g = 1.0 - (1.0 - hsl.g) * (1.0 - factor);
     //hsl.r = mix(hsl.r, n, iIntensity);
     hsl.r = mod(hsl.r + n * iIntensity, 1.0);
-    gl_FragColor.rgb = hsv2rgb(hsl);
-    gl_FragColor.a = samp.a;
+    fragColor.rgb = hsv2rgb(hsl);
+    fragColor.a = samp.a;
 }

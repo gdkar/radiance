@@ -1,7 +1,7 @@
 // Fire from the bottom
 
 void main(void) {
-    gl_FragColor = texture2D(iFrame, uv);
+    fragColor = texture2D(iFrame, uv);
 
     vec2 normCoord = (uv - 0.5) * aspectCorrection;
 
@@ -12,10 +12,10 @@ void main(void) {
     shift = (iIntensity * 0.5 + 0.5) * shift + vec2(0., 0.5 - 0.5 * iIntensity);
     shift /= aspectCorrection;
 
-    uv = uv + shift;
-    vec4 color = vec4(1., uv.y * 0.6, 0., smoothstep(0.1, 0.3, (1. - uv.y)));
+    vec2 uuv = uv + shift;
+    vec4 color = vec4(1., uuv.y * 0.6, 0., smoothstep(0.1, 0.3, (1. - uuv.y)));
     
     color.a *= smoothstep(0., 0.2, iIntensity);
     
-    gl_FragColor = composite(gl_FragColor, color);
+    fragColor = composite(fragColor, color);
 }

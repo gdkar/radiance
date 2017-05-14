@@ -47,16 +47,18 @@ QObject *effectListProvider(QQmlEngine *engine, QJSEngine *scriptEngine) {
 }
 
 int main(int argc, char *argv[]) {
-    QCoreApplication::setOrganizationName("Radiance");
-    QCoreApplication::setOrganizationDomain("radiance.lighting");
-    QCoreApplication::setApplicationName("Radiance");
-    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+    QGuiApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+    QGuiApplication::setOrganizationName("Radiance");
+    QGuiApplication::setOrganizationDomain("radiance.lighting");
+    QGuiApplication::setApplicationName("Radiance");
+    QGuiApplication::setDesktopSettingsAware(true);
     QGuiApplication app(argc, argv);
     //qRegisterMetaType<Effect*>("Effect*");
 
-    settings = new QSettings();
-    outputSettings = new QSettings(QSettings::IniFormat, QSettings::UserScope, "Radiance", "Radiance Output");
-    uiSettings = new UISettings();
+    settings = new QSettings(&app);
+    outputSettings = new QSettings(QSettings::IniFormat, QSettings::UserScope, "Radiance", "Radiance Output",&app);
+    uiSettings = new UISettings(&app);
     audio = new Audio();
     outputManager = new OutputManager(outputSettings);
     timebase = new Timebase();
@@ -76,6 +78,7 @@ int main(int argc, char *argv[]) {
     qmlRegisterType<LuxBus>("radiance", 1, 0, "LuxBus");
     qmlRegisterType<LuxDevice>("radiance", 1, 0, "LuxDevice");
     qmlRegisterSingletonType<OutputManager>("radiance", 1, 0, "OutputManager", outputManagerProvider);
+
 
     // Render context
     QThread renderThread;

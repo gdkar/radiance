@@ -31,24 +31,23 @@ public:
         makeCurrent();
         teardownGL();
     }
- 
+
     void initializeGL() {
         // Initialize OpenGL Backend
         initializeOpenGLFunctions();
 
         // Set global information
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-        auto program = new QOpenGLShaderProgram();
-        program->addShaderFromSourceCode(QOpenGLShader::Vertex,
-            RenderContext::defaultVertexShaderSource());
+        auto program = RenderContext::defaultVertexHalf();
         program->addShaderFromSourceCode(QOpenGLShader::Fragment,
-                                        "uniform vec2 iResolution;"
-                                        "uniform sampler2D iFrame;"
-                                        "void main(void) {"
-                                        "    vec2 uv = gl_FragCoord.xy / iResolution;"
-                                        "    gl_FragColor = texture2D(iFrame, uv);"
-                                        "    gl_FragColor.a = 1.;"
+                                        "#version 130\n"
+                                        "uniform vec2 iResolution;\n"
+                                        "uniform sampler2D iFrame;\n"
+                                        "in vec2 uv;\n"
+                                        "out vec4 fragColor;\n"
+                                        "void main(void) {\n"
+                                        "    fragColor = texture2D(iFrame, uv);\n"
+                                        "    fragColor.a = 1.;\n"
                                         "}");
         program->link();
 
@@ -57,23 +56,24 @@ public:
 
     void resizeGL(int width, int height) {
     }
-
     void paintGL() {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         QMutexLocker locker(&m_outputUI->m_sourceLock);
 
-        if(m_outputUI->m_source != NULL) {
+        if(m_outputUI->m_source ) {
             auto m_videoNode = m_outputUI->m_source->m_videoNode;
-            m_videoNode->swap(m_videoNode->context()->outputFboIndex());
-            if(m_videoNode->m_displayFbos[m_videoNode->context()->outputFboIndex()] != NULL) {
+            auto out_index = m_videoNode->context()->fboIndex(RenderContext::OutputFboRole);
+            m_videoNode->swap(out_index);
+            if(m_videoNode->m_displayFbos[out_index]) {
 
-                glClearColor(0, 0, 0, 0);
+                glClear(GL_COLOR_BUFFER_BIT);
                 glDisable(GL_DEPTH_TEST);
                 glDisable(GL_BLEND);
 
                 m_program->bind();
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, m_videoNode->m_displayFbos[m_videoNode->context()->outputFboIndex()]->texture());
+                glBindTexture(GL_TEXTURE_2D, m_videoNode->m_displayFbos[out_index]->texture());
                 m_program->setUniformValue("iResolution", size());
                 m_program->setUniformValue("iFrame", 0);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

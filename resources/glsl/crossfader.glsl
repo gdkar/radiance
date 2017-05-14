@@ -1,8 +1,9 @@
+#version 130
+in vec2 uv;
 uniform lowp float iParameter;
-varying highp vec2 coords;
 uniform sampler2D iLeft;
 uniform sampler2D iRight;
-
+out vec4 fragColor;
 // Alpha-compsite two colors, putting one on top of the other
 vec4 composite(vec4 under, vec4 over) {
     float a_out = 1. - (1. - over.a) * (1. - under.a);
@@ -10,7 +11,7 @@ vec4 composite(vec4 under, vec4 over) {
 }
 
 void main() {
-    vec4 l = texture2D(iLeft, 0.5 * (coords + 1.));
-    vec4 r = texture2D(iRight, 0.5 * (coords + 1.));
-    gl_FragColor = l * (1. - iParameter) + r * iParameter;
+    vec4 l = texture2D(iLeft, uv);
+    vec4 r = texture2D(iRight,uv);
+    fragColor = l * (1. - iParameter) + r * iParameter;
 }

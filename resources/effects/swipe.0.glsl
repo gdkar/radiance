@@ -12,5 +12,5 @@ void main(void) {
     factor = min(factor, 1.0 - x);
     factor = clamp(factor, 0.0, 1.0);
 
-    gl_FragColor = mix(next, prev, factor);
+    fragColor = mix(next, prev, factor);
 }
