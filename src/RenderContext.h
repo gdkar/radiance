@@ -11,6 +11,7 @@
 #include <QOpenGLShader>
 #include <QOpenGLTexture>
 #include <QSemaphore>
+#include "OffscreenContext.h"
 #include "VideoNode.h"
 #include "semaphore.hpp"
 
@@ -34,8 +35,13 @@ public:
     static QString defaultVertexShaderSource();
     static QOpenGLShader *defaultVertexShader();
     static QOpenGLShaderProgram *defaultVertexHalf();
-    QSharedPointer<QOffscreenSurface> surface;
-    QOpenGLContext *context;
+//    QSharedPointer<QOffscreenSurface> surface;
+//    QOpenGLContext *context;
+    OffscreenContext *context;
+    OffscreenContext *compiler_context;
+//    QSharedPointer<QOffscreenSurface> compiler_surface;
+//    QOpenGLContext *compiler_context;
+    QMutex m_compilerLock;
     QTimer *timer;
     QElapsedTimer elapsed_timer;
     QMutex m_contextLock;

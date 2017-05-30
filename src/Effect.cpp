@@ -147,6 +147,12 @@ bool Effect::loadProgram(QString name) {
     auto headerString = headerStream.readAll();
 
     auto programs = std::vector<ShaderProgramPointer>{};
+    QMutexLocker clocker(&context()->m_compilerLock);
+    auto current = QOpenGLContext::currentContext();
+    auto csurface= static_cast<QSurface*>(nullptr);
+    if(current)
+        csurface = current->surface();
+    context()->compiler_context->makeCurrent();
 
     for(int i=0;;i++) {
         auto filename = QString("../resources/effects/%1.%2.glsl").arg(name).arg(i);
@@ -163,11 +169,14 @@ bool Effect::loadProgram(QString name) {
         QTextStream stream(&file);
         auto s = headerString + stream.readAll();
         programs.emplace_back(RenderContext::defaultVertexHalf());
-        auto && program = programs.back();
+        auto & program = programs.back();
         if(!program->addShaderFromSourceCode(QOpenGLShader::Fragment, s))
             goto err;
         if(!program->link())
             goto err;
+    }
+    if(current) {
+        current->makeCurrent(csurface);
     }
     if(programs.empty()) {
         qDebug() << QString("No shaders found for \"%1\"").arg(name);

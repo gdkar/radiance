@@ -34,6 +34,7 @@ add_executable(radiance WIN32 src/main.cpp
     src/Output.cpp
     src/OutputUI.cpp
     src/RenderContext.cpp
+    src/OffscreenContext.cpp
     src/Timebase.cpp
     src/UISettings.cpp
     src/VideoNode.cpp

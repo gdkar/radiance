@@ -41,7 +41,6 @@
 }
 RenderContext::RenderContext()
     : context(nullptr)
-    , surface(nullptr)
     , timer(nullptr)
     , m_premultiply(nullptr)
     , m_outputCount(2)
@@ -51,6 +50,29 @@ RenderContext::RenderContext()
     , m_blankFbo()
     , m_framePeriodLPF(0)
 {
+    {
+        compiler_context = new OffscreenContext();
+        connect(this, &QObject::destroyed,compiler_context,&QObject::deleteLater);
+        {
+            auto fmt = QSurfaceFormat::defaultFormat();
+            if(auto scontext = QOpenGLContext::globalShareContext())
+                fmt = scontext->format();
+            fmt.setVersion(3,0);
+            fmt.setAlphaBufferSize(8);
+            fmt.setRedBufferSize(8);
+            fmt.setGreenBufferSize(8);
+            fmt.setBlueBufferSize(8);
+            fmt.setStencilBufferSize(8);
+            fmt.setDepthBufferSize(24);
+            compiler_context->setFormat(fmt);
+            if(!compiler_context->create()) {
+                throw std::runtime_error("FUUUUUUUUUCK");
+            }
+            qDebug() << "Desired format\n\n" << fmt << "\n\n";
+            qDebug() << "Actual  format\n\n" << compiler_context->format()<< "\n\n";
+        }
+    }
+
     connect(this, &RenderContext::addVideoNodeRequested, this, &RenderContext::addVideoNode, Qt::QueuedConnection);
     connect(this, &RenderContext::removeVideoNodeRequested, this, &RenderContext::removeVideoNode, Qt::QueuedConnection);
     connect(this, &RenderContext::renderRequested, this, &RenderContext::render, Qt::QueuedConnection);
@@ -59,21 +81,18 @@ RenderContext::RenderContext()
 RenderContext::~RenderContext() {
     m_premultiply = 0;
     m_noiseTextures.clear();
-    surface = 0;
     context->deleteLater();
     context = 0;
 }
 
 void RenderContext::start() {
     qDebug() << "Calling start from" << QThread::currentThread();
-    context = new QOpenGLContext(this);
+    context = new OffscreenContext(nullptr, this);
     {
         auto fmt = QSurfaceFormat::defaultFormat();
         if(auto scontext = QOpenGLContext::globalShareContext()) {
             fmt = scontext->format();
-            context->setShareContext(scontext);
         }
-//        fmt.setVersion(4,5);
         fmt.setVersion(3,0);
         fmt.setAlphaBufferSize(8);
         fmt.setRedBufferSize(8);
@@ -88,19 +107,6 @@ void RenderContext::start() {
         qDebug() << "Desired format\n\n" << fmt << "\n\n";
         qDebug() << "Actual  format\n\n" << context->format()<< "\n\n";
     }
-
-    // Creating a QOffscreenSurface with no window
-    // may fail on some platforms
-    // (e.g. wayland)
-    {
-        auto tmp_surface = QSharedPointer<QOffscreenSurface>(
-            new QOffscreenSurface(),
-               &QOffscreenSurface::deleteLater
-                );
-        tmp_surface->setFormat(context->format());
-        tmp_surface->create();
-        surface = tmp_surface;
-    }
     elapsed_timer.start();
 }
 
@@ -113,10 +119,10 @@ void RenderContext::checkLoadShaders() {
     program->addShaderFromSourceCode(QOpenGLShader::Fragment,
                                        "#version 130\n"
                                        "in vec2 uv;\n"
-                                       "uniform sampler2D iFrame;\n"
                                        "out vec4 fragColor;\n"
+                                       "uniform sampler2D iFrame;\n"
                                        "void main() {\n"
-                                        "    vec4 l = texture2D(iFrame, uv);\n"
+                                       "    vec4 l = texture2D(iFrame, uv);\n"
                                        "    fragColor = vec4(l.rgb * l.a, l.a);\n"
                                        "}\n");
     if(!program->link())
@@ -204,11 +210,11 @@ qreal RenderContext::fps() const {
 }
 
 void RenderContext::makeCurrent() {
-    context->makeCurrent(surface.data());
+    context->makeCurrent();
 }
 
 void RenderContext::flush() {
-    context->functions()->glFinish();
+    context->extraFunctions()->glFinish();
 }
 
 void RenderContext::addVideoNode(VideoNode* n) {
