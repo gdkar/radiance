@@ -4,7 +4,7 @@
 
 VideoNode::VideoNode(QSharedPointer<RenderContext> context)
     : m_context(context)
-    , m_inputCount(0) 
+    , m_inputCount(0)
     , m_ready(false)
 {
 }

@@ -23,7 +23,7 @@ ApplicationWindow {
     }
     EffectNode {
         id: en2
-        name: "hue"
+        name: "flow"
     }
     EffectNode {
         id: en3
@@ -43,8 +43,8 @@ ApplicationWindow {
     EffectNode {
         id: cross
         //name: "crossfader"
-        name: "greenscreen"
-        inputCount: 2
+        name: "crossfader"
+//        inputCount: 2
     }
     EffectNode {
         id: after

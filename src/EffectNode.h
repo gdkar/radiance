@@ -30,7 +30,7 @@ class EffectNodeOpenGLWorker : public OpenGLWorker {
 
 public:
     EffectNodeOpenGLWorker(EffectNode *p);
-public slots:   
+public slots:
     // Call this after changing
     // "name"
     void initialize();
@@ -43,6 +43,7 @@ signals:
     void fatal(QString str);
 protected:
     bool loadProgram(QString name);
+    QList<QStringList> m_passes;
     EffectNode *m_p;
 };
 
