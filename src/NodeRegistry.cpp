@@ -65,13 +65,13 @@ QVariantMap NodeRegistry::qmlNodeTypes() {
 void NodeRegistry::reload() {
     m_nodeTypes.clear();
 
-    auto filters = QStringList{} << QString{"*.0.glsl"};
+    auto filters = QStringList{} << QString{"*.glsl"};
     QDir dir("../resources/effects/");
     dir.setNameFilters(filters);
     dir.setSorting(QDir::Name);
 
     for (auto effectName : dir.entryList()) {
-        QString name = effectName.replace(".0.glsl", "");
+        QString name = effectName.replace(".glsl", "");
         VideoNodeType nodeType = {
             .name = name,
             .type = VideoNodeType::EFFECT_NODE,
