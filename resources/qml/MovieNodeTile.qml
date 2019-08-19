@@ -80,7 +80,32 @@ VideoNodeTile {
                 }
             ]
         }
+        Slider {
+            property bool controlled;
+            id: speed
+            Layout.fillWidth: true
+            from: 0
+            to: 2
+            enabled: tile.videoNode.duration > 0
+            value: tile.videoNode.duration > 0 ? tile.videoNode.speed : 0
+            state: (pressed || controlled) ? "seeking" : ""
+            onValueChanged: {
+                if (state == "seeking"
+                    && tile.videoNode.duration > 0) {
+                    tile.videoNode.speed = value;
+                }
+            }
 
+            states: [
+                State {
+                    name: "seeking"
+                    PropertyChanges {
+                        target: slider;
+                        value: value;
+                    }
+                }
+            ]
+        }
         ComboBox {
             id: factorSelector;
             Layout.fillWidth: true

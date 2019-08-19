@@ -33,6 +33,7 @@ void MovieNode::init(QString file, QString name)
     connect(m_openGLWorker.data(), &MovieNodeOpenGLWorker::videoSizeChanged, this, &MovieNode::onVideoSizeChanged);
     connect(m_openGLWorker.data(), &MovieNodeOpenGLWorker::positionChanged, this, &MovieNode::onPositionChanged);
     connect(m_openGLWorker.data(), &MovieNodeOpenGLWorker::durationChanged, this, &MovieNode::onDurationChanged);
+    connect(m_openGLWorker.data(), &MovieNodeOpenGLWorker::speedChanged, this, &MovieNode::onSpeedChanged);
     connect(m_openGLWorker.data(), &MovieNodeOpenGLWorker::muteChanged, this, &MovieNode::onMuteChanged);
     connect(m_openGLWorker.data(), &MovieNodeOpenGLWorker::pauseChanged, this, &MovieNode::onPauseChanged);
 
@@ -87,7 +88,10 @@ qreal MovieNode::duration() {
     QMutexLocker locker(&m_stateLock);
     return m_duration;
 }
-
+qreal MovieNode::speed() {
+    QMutexLocker locker(&m_stateLock);
+    return m_speed;
+}
 QSize MovieNode::videoSize() {
     QMutexLocker locker(&m_stateLock);
     return m_videoSize;
@@ -130,6 +134,17 @@ void MovieNode::onPositionChanged(qreal position) {
         }
     }
     if (changed) emit positionChanged(position);
+}
+void MovieNode::onSpeedChanged(qreal speed) {
+    bool changed = false;
+    {
+        QMutexLocker locker(&m_stateLock);
+        if(speed != m_speed ) {
+            m_speed= speed;
+            changed = true;
+        }
+    }
+    if (changed) emit speedChanged(speed);
 }
 
 void MovieNode::onDurationChanged(qreal duration) {
@@ -214,6 +229,10 @@ void MovieNode::setName(QString name) {
 
 void MovieNode::setPosition(qreal position) {
     QMetaObject::invokeMethod(m_openGLWorker.data(), "setPosition", Qt::QueuedConnection, Q_ARG(qreal, position));
+}
+
+void MovieNode::setSpeed(qreal speed) {
+    QMetaObject::invokeMethod(m_openGLWorker.data(), "setSpeed", Qt::QueuedConnection, Q_ARG(qreal, speed));
 }
 
 void MovieNode::setMute(bool mute) {
@@ -381,6 +400,7 @@ void MovieNodeOpenGLWorker::initialize(QString filename) {
         throw std::runtime_error("OpenGL not compiled in");
 
     mpv_observe_property(m_mpv, 0, "duration", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(m_mpv, 0, "speed", MPV_FORMAT_DOUBLE);
     mpv_observe_property(m_mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(m_mpv, 0, "video-params/w", MPV_FORMAT_INT64);
     mpv_observe_property(m_mpv, 0, "video-params/h", MPV_FORMAT_INT64);
@@ -514,6 +534,11 @@ void MovieNodeOpenGLWorker::handleEvent(mpv_event *event) {
                     p->m_ready = true;
                 }
             }
+        } else if (strcmp(prop->name, "speed") == 0) {
+            if (prop->format == MPV_FORMAT_DOUBLE) {
+                double speed = *(double *)prop->data;
+                emit speedChanged(speed);
+            }
         } else if (strcmp(prop->name, "video-params/w") == 0) {
             if (prop->format == MPV_FORMAT_INT64) {
                 qint64 d = *(qint64 *)prop->data;
@@ -598,6 +623,10 @@ void MovieNodeOpenGLWorker::command(const QVariant &params) {
 
 void MovieNodeOpenGLWorker::setPosition(qreal position) {
     command(QVariantList() << "seek" << position << "absolute");
+}
+
+void MovieNodeOpenGLWorker::setSpeed(qreal speed) {
+    command(QVariantList() << "set" << "speed" << QVariant::fromValue(speed).toString());
 }
 
 void MovieNodeOpenGLWorker::setMute(bool mute) {

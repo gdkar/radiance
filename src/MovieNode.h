@@ -37,6 +37,7 @@ class MovieNode
     Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoSizeChanged)
     Q_PROPERTY(qreal duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(qreal position READ position NOTIFY positionChanged WRITE setPosition)
+    Q_PROPERTY(qreal speed READ speed NOTIFY speedChanged WRITE setSpeed)
     Q_PROPERTY(bool mute READ mute NOTIFY muteChanged WRITE setMute)
     Q_PROPERTY(bool pause READ pause NOTIFY pauseChanged WRITE setPause)
     Q_PROPERTY(enum Factor factor READ factor WRITE setFactor NOTIFY factorChanged)
@@ -87,11 +88,13 @@ public slots:
     QString name();
     qreal position();
     qreal duration();
+    qreal speed();
     bool mute();
     bool pause();
     enum Factor factor();
     void setFile(QString file);
     void setPosition(qreal position);
+    void setSpeed(qreal speed);
     void setName(QString name);
     void setMute(bool mute);
     void setPause(bool pause);
@@ -101,6 +104,7 @@ protected slots:
     void onVideoSizeChanged(QSize size);
     void onPositionChanged(qreal position);
     void onDurationChanged(qreal duration);
+    void onSpeedChanged(qreal speed);
     void onMuteChanged(bool mute);
     void onPauseChanged(bool pause);
 
@@ -110,6 +114,7 @@ signals:
     void videoSizeChanged(QSize size);
     void positionChanged(qreal position);
     void durationChanged(qreal duration);
+    void speedChanged(qreal speed);
     void muteChanged(bool mute);
     void pauseChanged(bool pause);
     void factorChanged(enum Factor factor);
@@ -132,6 +137,7 @@ protected:
     bool m_ready{};
     qreal m_position{};
     qreal m_duration{};
+    qreal m_speed{1.};
     bool m_mute{true};
     bool m_pause{};
     enum MovieNode::Factor m_factor{MovieNode::Crop};
@@ -157,6 +163,7 @@ signals:
     void error(QString str);
     void positionChanged(qreal position);
     void durationChanged(qreal duration);
+    void speedChanged(qreal speed);
     void videoSizeChanged(QSize size);
     void muteChanged(bool mute);
     void pauseChanged(bool pause);
@@ -165,6 +172,7 @@ public slots:
     void command(const QVariant &params);
     void drawFrame();
     void setPosition(qreal position);
+    void setSpeed(qreal speed);
     void setMute(bool mute);
     void setPause(bool pause);
 
