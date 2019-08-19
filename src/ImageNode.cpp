@@ -20,11 +20,13 @@ void ImageNode::init(QString file)
 
     setInputCount(1);
     setFile(file);
+    setFrequency(0);
 }
 
 QJsonObject ImageNode::serialize() {
     QJsonObject o = VideoNode::serialize();
     o.insert("file", file());
+    o.insert("frequency",frequency());
     return o;
 }
 
@@ -67,10 +69,27 @@ void ImageNode::setFile(QString file) {
     if (wasNameChanged) emit nameChanged(newName);
 }
 
+double ImageNode::frequency() {
+    QMutexLocker locker(&m_stateLock);
+    return m_frequency;
+}
+
+void ImageNode::setFrequency(double frequency) {
+    auto changed = false;
+    {
+        QMutexLocker locker(&m_stateLock);
+        if(frequency != m_frequency) {
+            m_frequency = frequency;
+            changed = true;
+        }
+    }
+    if(changed) emit frequencyChanged(frequency);
+}
 GLuint ImageNode::paint(QSharedPointer<Chain> chain, QVector<GLuint> inputTextures) {
     int totalDelay;
     QVector<int> frameDelays;
     QVector<QSharedPointer<QOpenGLTexture>> frameTextures;
+    double freq;
     {
         QMutexLocker locker(&m_stateLock);
         if (!m_ready || m_frameTextures.empty())
@@ -79,9 +98,14 @@ GLuint ImageNode::paint(QSharedPointer<Chain> chain, QVector<GLuint> inputTextur
         totalDelay = m_totalDelay;
         frameDelays = m_frameDelays;
         frameTextures = m_frameTextures;
+        freq = m_frequency;
     }
 
-    auto currentMs = int64_t(context()->timebase()->beat() *  500);
+    auto beat = context()->timebase()->beat();
+    auto currentMs = int64_t(beat *  500);
+    if(freq) {
+        currentMs = int64_t(beat * freq * totalDelay * 0.5);
+    }
     auto extraMs = currentMs;
     if (totalDelay) {
         extraMs = currentMs % totalDelay;

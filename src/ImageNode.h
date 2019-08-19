@@ -15,6 +15,7 @@ class ImageNode
     Q_OBJECT
     Q_PROPERTY(QString file READ file WRITE setFile NOTIFY fileChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
+    Q_PROPERTY(double frequency READ frequency WRITE setFrequency NOTIFY frequencyChanged);
 
     friend class ImageNodeOpenGLWorker;
 
@@ -53,10 +54,12 @@ public slots:
     QString file();
     QString name();
     void setFile(QString file);
-
+    double frequency();
+    void setFrequency(double frequency);
 signals:
     void fileChanged(QString file);
     void nameChanged(QString name);
+    void frequencyChanged(double frequency);
 
 private:
     QString fileToName();
@@ -72,6 +75,7 @@ protected:
 
     int          m_totalDelay{};
     QVector<int> m_frameDelays{}; // milliseconds
+    double       m_frequency{};
     QVector<QSharedPointer<QOpenGLTexture>> m_frameTextures{};
 };
 

@@ -8,9 +8,14 @@ VideoNodeTile {
     id: tile;
 
     onVideoNodeChanged: {
-
+        videoNode.frequency = Qt.binding(function() { return frequencyCombo.value });
     }
-
+    Connections {
+        target: videoNode
+        onFrequencyChanged: {
+            frequencyCombo.value = frequency;
+        }
+    }
     ColumnLayout {
         anchors.fill: parent;
         anchors.leftMargin: 10
@@ -25,6 +30,15 @@ VideoNodeTile {
 
         CheckerboardPreview {
             videoNode: tile.videoNode
+        }
+        RowLayout {
+            FrequencyDropDown {
+                id: frequencyCombo;
+            }
+            Label {
+                text: attachedParameter >= 0 ? "#" + attachedParameter : "";
+                color: RadianceStyle.tileTextColor;
+            }
         }
     }
 
